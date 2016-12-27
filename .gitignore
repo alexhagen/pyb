@@ -1,7 +1,7 @@
 # compiled tests
 brender_*.py
 # rendered images
-.png
+*.png
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
