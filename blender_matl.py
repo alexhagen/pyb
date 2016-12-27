@@ -4,12 +4,6 @@ class bmatl:
     def __init__(self):
         pass
 
-    def flat(self, name="Flat", color=(1.0, 1.0, 1.0)):
-        flat = bpy.data.materials.new(name)
-        flat.diffuse_color = color
-        self.matl = flat
-        return self
-
     def concrete(self, scale=10.0):
         concrete = bpy.data.materials.new("Concrete")
         concrete.use_nodes = True

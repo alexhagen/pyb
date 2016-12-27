@@ -4,37 +4,6 @@ class bgeo:
     def __init__(self):
         pass
 
-    def rpp(self, x1=None, x2=None, y1=None, y2=None, z1=None, z2=None, c=None,
-            l=None, name="rpp"):
-        self.name = name
-        bpy.ops.mesh.primitive_cube_add()
-        bpy.context.object.name = name
-        bpy.context.object.location = c
-        bpy.context.object.scale = (l[0]/2., l[1]/2., l[2]/2.)
-        bpy.ops.object.transform_apply(location=True, scale=True)
-        self.object = bpy.context.object
-        return self
-
-    def sph(self, c=None, r=None, name="sph"):
-        self.name = name
-        bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=4)
-        bpy.context.object.name = name
-        bpy.context.object.location = c
-        bpy.context.object.scale = (r / 2., r / 2., r / 2.)
-        bpy.ops.object.transform_apply(location=True, scale=True)
-        self.object = bpy.context.object
-        return self
-
-    def rcc(self, c=None, r=None, h=None, name="rcc"):
-        self.name = name
-        bpy.ops.mesh.primitive_cylinder_add()
-        bpy.context.object.name = name
-        bpy.context.object.location = c
-        bpy.context.object.scale = (r / 2., r / 2., h / 2.)
-        bpy.ops.object.transform_apply(location=True, scale=True)
-        self.object = bpy.context.object
-        return self
-
     def __add__(self, right):
         if right is not None:
             self.name = self.name + "p" + right.name
