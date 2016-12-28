@@ -88,27 +88,41 @@ class pyb(object):
 
     def rcc(self, c=None, r=None, h=None, name="rcc", color=None, direction='z',
             alpha=1.0):
+        """ makes a cylinder with center point ``c``, radius ``r``, and height ``h``
+
+            .. todo:: Make sure rotation works here
+        """
         self.name = name
         self.file_string += 'bpy.ops.mesh.primitive_cylinder_add()\n'
         self.file_string += 'bpy.context.object.name = "%s"\n' % (name)
         rotation = [0., 0., 0.]
         if direction == 'z':
             direction = 2
+            rotdir = 2
         elif direction == 'y':
             direction = 1
+            rotdir = 0
         elif direction == 'x':
             direction = 0
+            rotdir = 1
         else:
             direction = int(direction)
-        rotation[direction] = np.pi/2.
+            if direction == 0:
+                rotdir = 1
+            elif direction == 1:
+                rotdir = 0
+            else:
+                rotdir = 2
+        rotation[rotdir] = np.pi/2.
         axis = [r, r, r]
         c = list(c)
         axis[direction] = h/2.
         c[direction] += h/2.
+        self.file_string += 'bpy.context.object.rotation_euler = (%15.10e, %15.10e, %15.10e)\n' % (rotation[0], rotation[1], rotation[2])
+        self.file_string += 'bpy.ops.object.transform_apply(rotation=True)\n'
         self.file_string += 'bpy.context.object.location = (%15.10e, %15.10e, %15.10e)\n' % (c[0], c[1], c[2])
         self.file_string += 'bpy.context.object.scale = (%15.10e, %15.10e, %15.10e)\n' % (axis[0], axis[1], axis[2])
-        self.file_string += 'bpy.context.object.rotation_euler = (%15.10e, %15.10e, %15.10e)\n' % (rotation[0], rotation[1], rotation[2])
-        self.file_string += 'bpy.ops.object.transform_apply(location=True, scale=True, rotation=True)\n'
+        self.file_string += 'bpy.ops.object.transform_apply(location=True, scale=True)\n'
         self.file_string += '%s = bpy.context.object\n' % (name)
         if color is not None:
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
@@ -212,8 +226,10 @@ class pyb(object):
         self.file_string += 'print(projection_matrix)\n'
         self.file_string += 'P, K, RT = get_3x4_P_matrix_from_blender(camera)\n'
         self.file_string += 'print(P)\n'
-        self.file_string += 'with open("%s" + "_projection.py", "w") as f:\n' % self.filename
-        self.file_string += '   f.write(repr(P))\n'
+        # self.file_string += 'os.system("convert %s.png -set proj_matrix ")'
+        # self.file_string += 'with open("%s" + "_projection.py", "w") as f:\n' % self.filename
+        # self.file_string += '   f.write("P = ")\n'
+        # self.file_string += '   f.write(repr(P).replace("Matrix", "").replace("(", "[").replace(")", "]"))\n'
 
     def run(self, filename=None, **kwargs):
         """ Opens a blender instance and runs the generated model rendering
@@ -231,8 +247,6 @@ class pyb(object):
             shutil.copy(self.filename + "_projection.py", filename.replace('.png', '') + "_projection.txt")
         execfile(self.filename + "_projection.py")
         self.has_run = True
-        print P
-        return P
 
     def show(self):
         """ Opens the image if it has been rendered
