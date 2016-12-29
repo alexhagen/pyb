@@ -87,7 +87,7 @@ class pyb(object):
             self.set_matl(obj=name, matl="%s_color" % name)
 
     def rcc(self, c=None, r=None, h=None, name="rcc", color=None, direction='z',
-            alpha=1.0):
+            alpha=1.0, emis=False):
         """ makes a cylinder with center point ``c``, radius ``r``, and height ``h``
 
             .. todo:: Make sure rotation works here
@@ -124,8 +124,11 @@ class pyb(object):
         self.file_string += 'bpy.context.object.scale = (%15.10e, %15.10e, %15.10e)\n' % (axis[0], axis[1], axis[2])
         self.file_string += 'bpy.ops.object.transform_apply(location=True, scale=True)\n'
         self.file_string += '%s = bpy.context.object\n' % (name)
-        if color is not None:
+        if color is not None and not emis:
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
+            self.set_matl(obj=name, matl="%s_color" % name)
+        elif color is not None and emis:
+            self.emis(name="%s_color" % name, color=color)
             self.set_matl(obj=name, matl="%s_color" % name)
 
     def flat(self, name="Flat", color='#555555', alpha=1.0):
@@ -147,6 +150,28 @@ class pyb(object):
             self.file_string += '    node.update()\n'
         self.file_string += '%s = flat\n' % name
 
+    def emis(self, name="Source", color="#555555", alpha=1.0, volume=False):
+        rgb = Color(color).rgb
+        self.file_string += 'source = bpy.data.materials.new("%s")\n' % name
+        self.file_string += 'source.use_nodes = True\n'
+        self.file_string += 'nodes = source.node_tree.nodes\n'
+        self.file_string += 'for key in nodes.values():\n'
+        self.file_string += '    nodes.remove(key)\n'
+        self.file_string += 'links = source.node_tree.links\n'
+        self.file_string += 'e = nodes.new(type="ShaderNodeEmission")\n'
+        self.file_string += 'e.inputs[0].default_value = (%6.4f, %6.4f, %6.4f, %6.4f)\n' % (rgb[0], rgb[1], rgb[2], alpha)
+        self.file_string += 'e.inputs[1].default_value = 5.0\n'
+        self.file_string += '# Make a material output\n'
+        self.file_string += 'material_output = nodes.new("ShaderNodeOutputMaterial")\n'
+        self.file_string += '# link from the shader and displacement groups to the outputs\n'
+        if volume:
+            self.file_string += 'links.new(e.outputs[0], material_output.inputs[1])\n'
+        else:
+            self.file_string += 'links.new(e.outputs[0], material_output.inputs[0])\n'
+        self.file_string += 'for node in nodes:\n'
+        self.file_string += '    node.update()\n'
+        self.file_string += '%s = source\n' % name
+
     def trans(self, name="Trans", color="#555555"):
         self.file_string += 'trans = bpy.data.materials.new("%s")\n' % name
         rgb = Color(color).rgb
@@ -161,7 +186,8 @@ class pyb(object):
     def look_at(self, target=None):
         self.file_string += 'camera_track.target = (bpy.data.objects["%s"])\n' % target
 
-    def render(self, camera_location=(500, 500, 300), fit=True):
+    def render(self, camera_location=(500, 500, 300), c=(0., 0., 0.),
+               l=(250., 250., 250.), fit=True):
         self.file_string += 'bpy.context.scene.objects.active.select = False\n'
         self.file_string += 'bpy.ops.object.visual_transform_apply()\n'
         self.file_string += 'bpy.data.scenes["Scene"].render.engine = "CYCLES"\n'
@@ -174,8 +200,6 @@ class pyb(object):
         self.file_string += 'bpy.context.scene.objects.link(empty)\n'
         self.file_string += 'empty.empty_draw_size = 1\n'
         self.file_string += 'empty.empty_draw_type = "CUBE"\n'
-        c = (0., 100., 0.)
-        l = (175.*2.,175.*2., 85.*2.)
         self.file_string += 'bpy.data.objects["Empty"].location = (%15.10e, %15.10e, %15.10e)\n' % (c[0], c[1], c[2])
         self.file_string += 'bpy.data.objects["Empty"].scale = (%15.10e, %15.10e, %15.10e)\n' % (l[0]/2., l[1]/2., l[2]/2.)
         self.file_string += 'empty = bpy.data.objects["Empty"]\n'
@@ -215,7 +239,7 @@ class pyb(object):
         self.file_string += 'bpy.data.scenes["Scene"].cycles.film_transparent = True\n'
         self.file_string += 'bpy.context.scene.cycles.filter_glossy = 0.05\n'
         self.file_string += 'bpy.ops.wm.save_as_mainfile(filepath="%s.blend")\n' % self.filename
-        self.file_string += 'bpy.ops.render.render( write_still=True )\n'
+        # self.file_string += 'bpy.ops.render.render( write_still=True )\n'
         self.file_string += 'modelview_matrix = camera.matrix_world.inverted()\n'
         self.file_string += 'projection_matrix = camera.calc_matrix_camera(\n'
         self.file_string += '        render.resolution_x,\n'
@@ -223,10 +247,10 @@ class pyb(object):
         self.file_string += '        render.pixel_aspect_x,\n'
         self.file_string += '        render.pixel_aspect_y,\n'
         self.file_string += '        )\n'
-        self.file_string += 'print(projection_matrix)\n'
         self.file_string += 'P, K, RT = get_3x4_P_matrix_from_blender(camera)\n'
-        self.file_string += 'print(P)\n'
-        # self.file_string += 'os.system("convert %s.png -set proj_matrix ")'
+        self.file_string += 'import os\n'
+        self.file_string += 'proj_matrix = "[[%15.10e, %15.10e, %15.10e, %15.10e],[%15.10e, %15.10e, %15.10e, %15.10e],[%15.10e, %15.10e, %15.10e, %15.10e]]" % (P[0][0], P[0][1], P[0][2], P[0][3], P[1][0], P[1][1], P[1][2], P[1][3], P[2][0], P[2][1], P[2][2], P[2][3])\n'
+        self.file_string += 'os.system("convert %s.png -set proj_matrix \'%%s\' %s.png" %% proj_matrix)' % (self.filename, self.filename)
         # self.file_string += 'with open("%s" + "_projection.py", "w") as f:\n' % self.filename
         # self.file_string += '   f.write("P = ")\n'
         # self.file_string += '   f.write(repr(P).replace("Matrix", "").replace("(", "[").replace(")", "]"))\n'
@@ -244,8 +268,9 @@ class pyb(object):
         render.communicate()
         if filename is not None:
             shutil.copy(self.filename + ".png", filename)
-            shutil.copy(self.filename + "_projection.py", filename.replace('.png', '') + "_projection.txt")
-        execfile(self.filename + "_projection.py")
+        proj_matrix = os.popen("identify -verbose %s | grep proj_matrix" % filename).read()
+        exec(proj_matrix.replace(" ", "").replace(":", "="))
+        self.proj_matrix = proj_matrix
         self.has_run = True
 
     def show(self):
