@@ -42,29 +42,18 @@
 <h1>pyb<a class="headerlink" href="#pyb" title="Permalink to this headline">¶</a></h1>
 <p>A python (2.7) binding for blender</p>
 </div>
-<div class="section" id="pyb-package">
-<h1>pyb package<a class="headerlink" href="#pyb-package" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="submodules">
-<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="pyb.blender_geo.html">pyb.blender_geo module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="pyb.blender_matl.html">pyb.blender_matl module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="pyb.blender_mats_utils.html">pyb.blender_mats_utils module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="pyb.blender_render.html">pyb.blender_render module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="pyb.blender_test.html">pyb.blender_test module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="pyb.brender_01.html">pyb.brender_01 module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="pyb.pyb.html">pyb.pyb module</a></li>
-</ul>
-</div>
-</div>
 <div class="section" id="module-pyb">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pyb" title="Permalink to this headline">¶</a></h2>
+<span id="pyb-package"></span><h1>pyb package<a class="headerlink" href="#module-pyb" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="pyb.pyb">
 <em class="property">class </em><code class="descclassname">pyb.</code><code class="descname">pyb</code><a class="reference internal" href="_modules/pyb.html#pyb"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyb.pyb" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/library/functions.html#object" title="(in Python v2.7)"><code class="xref py py-class docutils literal"><span class="pre">object</span></code></a></p>
 <p>An object to save commands for blender 3d plotting and render</p>
+<dl class="method">
+<dt id="pyb.pyb.emis">
+<code class="descname">emis</code><span class="sig-paren">(</span><em>name='Source'</em>, <em>color='#555555'</em>, <em>alpha=1.0</em>, <em>volume=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyb.html#pyb.emis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyb.pyb.emis" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="method">
 <dt id="pyb.pyb.flat">
 <code class="descname">flat</code><span class="sig-paren">(</span><em>name='Flat'</em>, <em>color='#555555'</em>, <em>alpha=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyb.html#pyb.flat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyb.pyb.flat" title="Permalink to this definition">¶</a></dt>
@@ -82,7 +71,7 @@
 
 <dl class="method">
 <dt id="pyb.pyb.rcc">
-<code class="descname">rcc</code><span class="sig-paren">(</span><em>c=None</em>, <em>r=None</em>, <em>h=None</em>, <em>name='rcc'</em>, <em>color=None</em>, <em>direction='z'</em>, <em>alpha=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyb.html#pyb.rcc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyb.pyb.rcc" title="Permalink to this definition">¶</a></dt>
+<code class="descname">rcc</code><span class="sig-paren">(</span><em>c=None</em>, <em>r=None</em>, <em>h=None</em>, <em>name='rcc'</em>, <em>color=None</em>, <em>direction='z'</em>, <em>alpha=1.0</em>, <em>emis=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyb.html#pyb.rcc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyb.pyb.rcc" title="Permalink to this definition">¶</a></dt>
 <dd><p>makes a cylinder with center point <code class="docutils literal"><span class="pre">c</span></code>, radius <code class="docutils literal"><span class="pre">r</span></code>, and height <code class="docutils literal"><span class="pre">h</span></code></p>
 <div class="admonition-todo admonition" id="index-0">
 <p class="first admonition-title">Todo</p>
@@ -92,7 +81,7 @@
 
 <dl class="method">
 <dt id="pyb.pyb.render">
-<code class="descname">render</code><span class="sig-paren">(</span><em>camera_location=(500</em>, <em>500</em>, <em>300)</em>, <em>fit=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyb.html#pyb.render"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyb.pyb.render" title="Permalink to this definition">¶</a></dt>
+<code class="descname">render</code><span class="sig-paren">(</span><em>camera_location=(500</em>, <em>500</em>, <em>300)</em>, <em>c=(0.0</em>, <em>0.0</em>, <em>0.0)</em>, <em>l=(250.0</em>, <em>250.0</em>, <em>250.0)</em>, <em>fit=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyb.html#pyb.render"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyb.pyb.render" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -140,6 +129,18 @@
 
 </dd></dl>
 
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pyb.blender_geo.html">pyb.blender_geo module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pyb.blender_matl.html">pyb.blender_matl module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pyb.blender_mats_utils.html">pyb.blender_mats_utils module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pyb.blender_render.html">pyb.blender_render module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pyb.blender_test.html">pyb.blender_test module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pyb.pyb.html">pyb.pyb module</a></li>
+</ul>
+</div>
 </div>
 </div>
 <div class="section" id="indices-and-tables">
@@ -160,9 +161,8 @@
   <h3><a href="#">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">pyb</a></li>
-<li><a class="reference internal" href="#pyb-package">pyb package</a><ul>
+<li><a class="reference internal" href="#module-pyb">pyb package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-pyb">Module contents</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
