@@ -74,7 +74,8 @@ class pyb(object):
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
             self.set_matl(obj=name, matl="%s_color" % name)
 
-    def sph(self, c=None, r=None, name="sph", color=None, alpha=1.0):
+    def sph(self, c=None, r=None, name="sph", color=None, alpha=1.0,
+            emis=False):
         self.name = name
         self.file_string += 'bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=8)\n'
         self.file_string += 'bpy.context.object.name = "%s"\n' % (name)
@@ -82,8 +83,11 @@ class pyb(object):
         self.file_string += 'bpy.context.object.scale = (%15.10e, %15.10e, %15.10e)\n' % (r, r, r)
         self.file_string += 'bpy.ops.object.transform_apply(location=True, scale=True)\n'
         self.file_string += '%s = bpy.context.object\n' % (name)
-        if color is not None:
+        if color is not None and not emis:
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
+            self.set_matl(obj=name, matl="%s_color" % name)
+        elif color is not None and emis:
+            self.emis(name="%s_color" % name, color=color)
             self.set_matl(obj=name, matl="%s_color" % name)
 
     def rcc(self, c=None, r=None, h=None, name="rcc", color=None, direction='z',
@@ -141,8 +145,8 @@ class pyb(object):
             self.file_string += 'for key in nodes.values():\n'
             self.file_string += '    nodes.remove(key)\n'
             self.file_string += 'links = flat.node_tree.links\n'
-            self.file_string += 'glass = nodes.new("ShaderNodeBsdfGlass")\n'
-            self.file_string += 'glass.inputs[1].default_value = 0.0\n'
+            self.file_string += 'glass = nodes.new("ShaderNodeBsdfTransparent")\n'
+            #self.file_string += 'glass.inputs[1].default_value = 0.0\n'
             self.file_string += 'glass.inputs[0].default_value = (%6.4f, %6.4f, %6.4f, %6.4f)\n' % (rgb[0], rgb[1], rgb[2], alpha)
             self.file_string += 'material_output = nodes.new("ShaderNodeOutputMaterial")\n'
             self.file_string += 'links.new(glass.outputs[0], material_output.inputs[0])\n'
@@ -187,7 +191,7 @@ class pyb(object):
         self.file_string += 'camera_track.target = (bpy.data.objects["%s"])\n' % target
 
     def render(self, camera_location=(500, 500, 300), c=(0., 0., 0.),
-               l=(250., 250., 250.), fit=True):
+               l=(250., 250., 250.), render=True, fit=True):
         self.file_string += 'bpy.context.scene.objects.active.select = False\n'
         self.file_string += 'bpy.ops.object.visual_transform_apply()\n'
         self.file_string += 'bpy.data.scenes["Scene"].render.engine = "CYCLES"\n'
@@ -225,7 +229,9 @@ class pyb(object):
 
         # self.file_string += '        #show the marked edges\n'
         # self.file_string += '        object.data.show_freestyle_edge_marks = True\n'
-        # self.file_string += 'bpy.data.scenes["Scene"].FreestyleLineSet.select_crease = False\n'
+        # self.file_string += 'bpy.data.scenes["Scene"].SceneRenderLayer.FreestyleLineSet.select_crease = False\n'
+        # self.file_string += 'from freestyle import FreestyleSettings\n'
+        # self.file_string += 'FreestyleSettings.crease_angle = "165d"\n'
         # self.file_string += 'bpy.data.scenes["Scene"].FreestyleLineSet.select_edge_mark = True\n'
         # self.file_string += 'bpy.context.scene.cycles.use_progressive_refine = True\n'
         self.file_string += 'bpy.context.scene.cycles.samples = 100\n'
@@ -239,7 +245,8 @@ class pyb(object):
         self.file_string += 'bpy.data.scenes["Scene"].cycles.film_transparent = True\n'
         self.file_string += 'bpy.context.scene.cycles.filter_glossy = 0.05\n'
         self.file_string += 'bpy.ops.wm.save_as_mainfile(filepath="%s.blend")\n' % self.filename
-        # self.file_string += 'bpy.ops.render.render( write_still=True )\n'
+        if render:
+            self.file_string += 'bpy.ops.render.render( write_still=True )\n'
         self.file_string += 'modelview_matrix = camera.matrix_world.inverted()\n'
         self.file_string += 'projection_matrix = camera.calc_matrix_camera(\n'
         self.file_string += '        render.resolution_x,\n'

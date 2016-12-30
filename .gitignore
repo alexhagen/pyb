@@ -1,5 +1,9 @@
+# the converted readme
+README.rst
+
 # compiled tests
 brender_*.py
+
 # rendered images
 *.png
 
