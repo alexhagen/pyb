@@ -7,6 +7,11 @@ import shutil
 
 class pyb(object):
     """ An object to save commands for blender 3d plotting and render
+
+        The ``pyb`` class is your blender scene, and I've coded in a limited
+        set of commands for some simplified bldnder plotting.  Right now, it
+        automatically saves to "brender_01.blend/.png" in the current
+        directory, if you can't find the files.
     """
     def __init__(self):
         self.file_string = ''
@@ -16,7 +21,12 @@ class pyb(object):
         self.scene_setup()
 
     def scene_setup(self):
-        """ deletes the default cube and sets up a scene to be used to render in
+        """ deletes the default cube and sets up a scene to be used to render
+
+            ``pyb.scene_setup`` is a convenience class that creates a new
+            scene and deletes the default cube, leaving you with a clean slate
+            to render on.  It is called automatically during initialization,
+            so there's no real reason that the user should ever call this.
         """
         self.file_string += 'import bpy\n'
         self.file_string += open('/home/ahagen/code/pyb/blender_mats_utils.py', 'r').read()
@@ -24,18 +34,25 @@ class pyb(object):
         self.file_string += '# First, delete the default cube\n'
         self.file_string += 'bpy.ops.object.delete()\n'
 
-    def sun(self, location=(500., 500., 500.), strength=1.0):
+    def sun(self, strength=1.0):
+        """ creates a blender sun lamp
+
+            ``pyb.sun`` creates a blender sun lamp and places it.  Location is
+            non-sensical in this context, as blender places its sun lamps
+            infinitely far away.  Strength, however, should be set, and set
+            much lower than the strength for a point lamp.
+
+            :param float strength: the strength of the sun lamp
+        """
         self.file_string += '# Now add a sun\n'
         self.file_string += 'lamp_data = bpy.data.lamps.new(name="Sun", type="SUN")\n'
         self.file_string += 'lamp_data.use_nodes = True\n'
         self.file_string += 'lamp_data.node_tree.nodes["Emission"].inputs[1].default_value = %15.10e\n' % strength
         self.file_string += 'lamp_object = bpy.data.objects.new(name="Sun", object_data=lamp_data)\n'
         self.file_string += 'bpy.context.scene.objects.link(lamp_object)\n'
-        self.file_string += 'lamp_object.location = (%15.10e, %15.10e, %15.10e)\n' % (location[0], location[1], location[2])
-        self.file_string += 'bpy.ops.object.transform_apply(location=True, scale=True)\n'
-
         self.file_string += 'lamp_object.select = True\n'
         self.file_string += 'bpy.context.scene.objects.active = lamp_object\n'
+        return self
 
     def point(self, location=(0., 0., 0.), strength=1.0, name="Point",
            color='#555555', alpha=1.0):
