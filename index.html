@@ -49,6 +49,10 @@
 <em class="property">class </em><code class="descclassname">pyb.</code><code class="descname">pyb</code><a class="reference internal" href="_modules/pyb.html#pyb"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyb.pyb" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/library/functions.html#object" title="(in Python v2.7)"><code class="xref py py-class docutils literal"><span class="pre">object</span></code></a></p>
 <p>An object to save commands for blender 3d plotting and render</p>
+<p>The <code class="docutils literal"><span class="pre">pyb</span></code> class is your blender scene, and I&#8217;ve coded in a limited
+set of commands for some simplified bldnder plotting.  Right now, it
+automatically saves to &#8220;brender_01.blend/.png&#8221; in the current
+directory, if you can&#8217;t find the files.</p>
 <dl class="method">
 <dt id="pyb.pyb.emis">
 <code class="descname">emis</code><span class="sig-paren">(</span><em>name='Source'</em>, <em>color='#555555'</em>, <em>alpha=1.0</em>, <em>volume=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyb.html#pyb.emis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyb.pyb.emis" title="Permalink to this definition">¶</a></dt>
@@ -81,7 +85,7 @@
 
 <dl class="method">
 <dt id="pyb.pyb.render">
-<code class="descname">render</code><span class="sig-paren">(</span><em>camera_location=(500</em>, <em>500</em>, <em>300)</em>, <em>c=(0.0</em>, <em>0.0</em>, <em>0.0)</em>, <em>l=(250.0</em>, <em>250.0</em>, <em>250.0)</em>, <em>fit=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyb.html#pyb.render"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyb.pyb.render" title="Permalink to this definition">¶</a></dt>
+<code class="descname">render</code><span class="sig-paren">(</span><em>camera_location=(500</em>, <em>500</em>, <em>300)</em>, <em>c=(0.0</em>, <em>0.0</em>, <em>0.0)</em>, <em>l=(250.0</em>, <em>250.0</em>, <em>250.0)</em>, <em>render=True</em>, <em>fit=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyb.html#pyb.render"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyb.pyb.render" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -98,7 +102,11 @@
 <dl class="method">
 <dt id="pyb.pyb.scene_setup">
 <code class="descname">scene_setup</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyb.html#pyb.scene_setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyb.pyb.scene_setup" title="Permalink to this definition">¶</a></dt>
-<dd><p>deletes the default cube and sets up a scene to be used to render in</p>
+<dd><p>deletes the default cube and sets up a scene to be used to render</p>
+<p><code class="docutils literal"><span class="pre">pyb.scene_setup</span></code> is a convenience class that creates a new
+scene and deletes the default cube, leaving you with a clean slate
+to render on.  It is called automatically during initialization,
+so there&#8217;s no real reason that the user should ever call this.</p>
 </dd></dl>
 
 <dl class="method">
@@ -114,13 +122,26 @@
 
 <dl class="method">
 <dt id="pyb.pyb.sph">
-<code class="descname">sph</code><span class="sig-paren">(</span><em>c=None</em>, <em>r=None</em>, <em>name='sph'</em>, <em>color=None</em>, <em>alpha=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyb.html#pyb.sph"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyb.pyb.sph" title="Permalink to this definition">¶</a></dt>
+<code class="descname">sph</code><span class="sig-paren">(</span><em>c=None</em>, <em>r=None</em>, <em>name='sph'</em>, <em>color=None</em>, <em>alpha=1.0</em>, <em>emis=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyb.html#pyb.sph"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyb.pyb.sph" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt id="pyb.pyb.sun">
-<code class="descname">sun</code><span class="sig-paren">(</span><em>location=(500.0</em>, <em>500.0</em>, <em>500.0)</em>, <em>strength=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyb.html#pyb.sun"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyb.pyb.sun" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<code class="descname">sun</code><span class="sig-paren">(</span><em>strength=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyb.html#pyb.sun"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyb.pyb.sun" title="Permalink to this definition">¶</a></dt>
+<dd><p>creates a blender sun lamp</p>
+<p><code class="docutils literal"><span class="pre">pyb.sun</span></code> creates a blender sun lamp and places it.  Location is
+non-sensical in this context, as blender places its sun lamps
+infinitely far away.  Strength, however, should be set, and set
+much lower than the strength for a point lamp.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>strength</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the strength of the sun lamp</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="method">
 <dt id="pyb.pyb.trans">
