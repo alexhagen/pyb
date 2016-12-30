@@ -27,6 +27,8 @@ class pyb(object):
             scene and deletes the default cube, leaving you with a clean slate
             to render on.  It is called automatically during initialization,
             so there's no real reason that the user should ever call this.
+
+            :returns: None
         """
         self.file_string += 'import bpy\n'
         self.file_string += open('/home/ahagen/code/pyb/blender_mats_utils.py', 'r').read()
@@ -43,6 +45,7 @@ class pyb(object):
             much lower than the strength for a point lamp.
 
             :param float strength: the strength of the sun lamp
+            :returns: ``pyb`` object with ``sun`` lamp added
         """
         self.file_string += '# Now add a sun\n'
         self.file_string += 'lamp_data = bpy.data.lamps.new(name="Sun", type="SUN")\n'
