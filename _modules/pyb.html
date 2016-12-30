@@ -68,6 +68,8 @@
 <span class="sd">            scene and deletes the default cube, leaving you with a clean slate</span>
 <span class="sd">            to render on.  It is called automatically during initialization,</span>
 <span class="sd">            so there&#39;s no real reason that the user should ever call this.</span>
+
+<span class="sd">            :returns: None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">file_string</span> <span class="o">+=</span> <span class="s1">&#39;import bpy</span><span class="se">\n</span><span class="s1">&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">file_string</span> <span class="o">+=</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;/home/ahagen/code/pyb/blender_mats_utils.py&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
@@ -84,6 +86,7 @@
 <span class="sd">            much lower than the strength for a point lamp.</span>
 
 <span class="sd">            :param float strength: the strength of the sun lamp</span>
+<span class="sd">            :returns: ``pyb`` object with ``sun`` lamp added</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">file_string</span> <span class="o">+=</span> <span class="s1">&#39;# Now add a sun</span><span class="se">\n</span><span class="s1">&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">file_string</span> <span class="o">+=</span> <span class="s1">&#39;lamp_data = bpy.data.lamps.new(name=&quot;Sun&quot;, type=&quot;SUN&quot;)</span><span class="se">\n</span><span class="s1">&#39;</span>
