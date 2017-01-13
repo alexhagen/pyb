@@ -140,7 +140,7 @@ class pyb(object):
         rotation[rotdir] = np.pi/2.
         axis = [r, r, r]
         c = list(c)
-        axis[direction] = h/2.
+        axis[direction] = h
         c[direction] += h/2.
         self.file_string += 'bpy.context.object.rotation_euler = (%15.10e, %15.10e, %15.10e)\n' % (rotation[0], rotation[1], rotation[2])
         self.file_string += 'bpy.ops.object.transform_apply(rotation=True)\n'
@@ -288,9 +288,9 @@ class pyb(object):
         self.render(**kwargs)
         with open(self.filename + '.py', 'w') as f:
             f.write(self.file_string)
-            cmd = "blender --background --python %s" % self.filename + '.py'
+            cmd = "nohup blender --background --python %s" % self.filename + '.py'
             print cmd
-            print os.popen('cat %s' % self.filename + '.py').read()
+            #print os.popen('cat %s' % self.filename + '.py').read()
         render = subprocess.Popen(cmd, shell=True)
         render.communicate()
         if filename is not None:
