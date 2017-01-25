@@ -18,6 +18,7 @@ class pyb(object):
         #self.file = tempfile.NamedTemporaryFile(suffix=".py", prefix="brender_")
         self.filename = "brender_01"
         self.has_run = False
+        self.proj_matrix = None
         self.scene_setup()
 
     def scene_setup(self):
@@ -140,7 +141,7 @@ class pyb(object):
         rotation[rotdir] = np.pi/2.
         axis = [r, r, r]
         c = list(c)
-        axis[direction] = h
+        axis[direction] = h/2.
         c[direction] += h/2.
         self.file_string += 'bpy.context.object.rotation_euler = (%15.10e, %15.10e, %15.10e)\n' % (rotation[0], rotation[1], rotation[2])
         self.file_string += 'bpy.ops.object.transform_apply(rotation=True)\n'
@@ -155,24 +156,50 @@ class pyb(object):
             self.emis(name="%s_color" % name, color=color)
             self.set_matl(obj=name, matl="%s_color" % name)
 
+    def subtract(self, left, right):
+        self.boolean(left=left, right=right, operation="DIFFERENCE")
+
+    def union(self, left, right):
+        self.boolean(left=left, right=right, operation="UNION")
+
+    def boolean(self, left, right, operation):
+        if operation == "DIFFERENCE":
+            op = 'less'
+        elif operation == "UNION":
+            op = 'plus'
+        name = left + "_" + operation.lower() + "_" + right
+        self.file_string += 'bpy.context.scene.objects.active = %s\n' % (left)
+        self.file_string += '%s = bpy.context.object.modifiers.new(type="BOOLEAN", name="%s")\n' % (name, left + "_" + operation.lower() + "_" + right)
+        self.file_string += '%s.operation = "%s"\n' % (name, operation)
+        self.file_string += '%s.object = %s\n' % (name, right)
+        self.file_string += '%s.double_threshold = 0.1\n' % name
+        self.file_string += 'bpy.ops.object.modifier_apply(apply_as="DATA", modifier="%s")\n' % (left + "_" + operation.lower() + "_" + right)
+        self.file_string += 'bpy.context.scene.objects.unlink(%s)\n' % right
+        self.file_string += 'bpy.context.scene.objects.active = bpy.context.object\n'
+        self.file_string += '%s = bpy.context.object\n' % (left + "_" + op + "_" + right)
+
     def flat(self, name="Flat", color='#555555', alpha=1.0):
-        self.file_string += 'flat = bpy.data.materials.new("%s")\n' % name
+        self.file_string += '%s = bpy.data.materials.new("%s")\n' % (name, name)
         rgb = Color(color).rgb
-        self.file_string += 'flat.diffuse_color = (%6.4f, %6.4f, %6.4f)\n' % (rgb[0], rgb[1], rgb[2])
+        self.file_string += '%s.diffuse_color = (%6.4f, %6.4f, %6.4f)\n' % (name, rgb[0], rgb[1], rgb[2])
         if alpha < 1.0:
-            self.file_string += 'flat.use_nodes = True\n'
-            self.file_string += 'nodes = flat.node_tree.nodes\n'
+            self.file_string += '%s.use_nodes = True\n' % name
+            self.file_string += 'nodes = %s.node_tree.nodes\n' % name
             self.file_string += 'for key in nodes.values():\n'
             self.file_string += '    nodes.remove(key)\n'
-            self.file_string += 'links = flat.node_tree.links\n'
-            self.file_string += 'glass = nodes.new("ShaderNodeBsdfTransparent")\n'
-            #self.file_string += 'glass.inputs[1].default_value = 0.0\n'
-            self.file_string += 'glass.inputs[0].default_value = (%6.4f, %6.4f, %6.4f, %6.4f)\n' % (rgb[0], rgb[1], rgb[2], alpha)
-            self.file_string += 'material_output = nodes.new("ShaderNodeOutputMaterial")\n'
-            self.file_string += 'links.new(glass.outputs[0], material_output.inputs[0])\n'
+            self.file_string += 'links = %s.node_tree.links\n' % name
+            self.file_string += '%s_bsdf = nodes.new("ShaderNodeBsdfDiffuse")\n' % name
+            self.file_string += '%s_bsdf.inputs[0].default_value = (%6.4f, %6.4f, %6.4f, %6.4f)\n' % (name, rgb[0], rgb[1], rgb[2], alpha)
+            self.file_string += '%s_glass = nodes.new("ShaderNodeBsdfTransparent")\n' % name
+            self.file_string += '%s_mix = nodes.new("ShaderNodeMixShader")\n' % name
+            self.file_string += 'links.new(%s_bsdf.outputs[0], %s_mix.inputs[1])\n' % (name, name)
+            self.file_string += 'links.new(%s_glass.outputs[0], %s_mix.inputs[2])\n' % (name, name)
+            self.file_string += '%s_mix.inputs[0].default_value = %6.4f\n' % (name, 1.0 - alpha)
+            self.file_string += '%s_material_output = nodes.new("ShaderNodeOutputMaterial")\n' % name
+            self.file_string += 'links.new(%s_mix.outputs[0], %s_material_output.inputs[0])\n' % (name, name)
             self.file_string += 'for node in nodes:\n'
             self.file_string += '    node.update()\n'
-        self.file_string += '%s = flat\n' % name
+        #self.file_string += '%s = flat\n' % name
 
     def emis(self, name="Source", color="#555555", alpha=1.0, volume=False):
         rgb = Color(color).rgb
@@ -230,7 +257,7 @@ class pyb(object):
         self.file_string += 'camera = bpy.data.objects["Camera"]\n'
         self.file_string += 'camera.location = (%6.4f, %6.4f, %6.4f)\n' % \
             (camera_location[0], camera_location[1], camera_location[2])
-        self.file_string += 'bpy.data.cameras[camera.name].clip_end = 1000.0\n'
+        self.file_string += 'bpy.data.cameras[camera.name].clip_end = 10000.0\n'
         self.file_string += 'bpy.data.cameras[camera.name].clip_start = 0.0\n'
         self.file_string += 'camera_track = camera.constraints.new("TRACK_TO")\n'
         self.file_string += 'camera_track.track_axis = "TRACK_NEGATIVE_Z"\n'
@@ -254,7 +281,7 @@ class pyb(object):
         # self.file_string += 'FreestyleSettings.crease_angle = "165d"\n'
         # self.file_string += 'bpy.data.scenes["Scene"].FreestyleLineSet.select_edge_mark = True\n'
         # self.file_string += 'bpy.context.scene.cycles.use_progressive_refine = True\n'
-        self.file_string += 'bpy.context.scene.cycles.samples = 100\n'
+        self.file_string += 'bpy.context.scene.cycles.samples = 10\n'
         self.file_string += 'bpy.context.scene.cycles.max_bounces = 16\n'
         self.file_string += 'bpy.context.scene.cycles.min_bounces = 3\n'
         self.file_string += 'bpy.context.scene.cycles.glossy_bounces = 16\n'
@@ -277,10 +304,8 @@ class pyb(object):
         self.file_string += 'P, K, RT = get_3x4_P_matrix_from_blender(camera)\n'
         self.file_string += 'import os\n'
         self.file_string += 'proj_matrix = "[[%15.10e, %15.10e, %15.10e, %15.10e],[%15.10e, %15.10e, %15.10e, %15.10e],[%15.10e, %15.10e, %15.10e, %15.10e]]" % (P[0][0], P[0][1], P[0][2], P[0][3], P[1][0], P[1][1], P[1][2], P[1][3], P[2][0], P[2][1], P[2][2], P[2][3])\n'
-        self.file_string += 'os.system("convert %s.png -set proj_matrix \'%%s\' %s.png" %% proj_matrix)' % (self.filename, self.filename)
-        # self.file_string += 'with open("%s" + "_projection.py", "w") as f:\n' % self.filename
-        # self.file_string += '   f.write("P = ")\n'
-        # self.file_string += '   f.write(repr(P).replace("Matrix", "").replace("(", "[").replace(")", "]"))\n'
+        if render:
+            self.file_string += 'os.system("convert %s.png -set proj_matrix \'%%s\' %s.png" %% proj_matrix)' % (self.filename, self.filename)
 
     def run(self, filename=None, **kwargs):
         """ Opens a blender instance and runs the generated model rendering
@@ -288,16 +313,20 @@ class pyb(object):
         self.render(**kwargs)
         with open(self.filename + '.py', 'w') as f:
             f.write(self.file_string)
-            cmd = "nohup blender --background --python %s" % self.filename + '.py'
+            cmd = "blender --background --python %s" % self.filename + '.py'
             print cmd
             #print os.popen('cat %s' % self.filename + '.py').read()
         render = subprocess.Popen(cmd, shell=True)
         render.communicate()
-        if filename is not None:
+        if 'render' in kwargs:
+            rendered = kwargs['render']
+        else:
+            rendered = true
+        if filename is not None and rendered:
             shutil.copy(self.filename + ".png", filename)
-        proj_matrix = os.popen("identify -verbose %s | grep proj_matrix" % filename).read()
-        exec(proj_matrix.replace(" ", "").replace(":", "="))
-        self.proj_matrix = proj_matrix
+            proj_matrix = os.popen("identify -verbose %s | grep proj_matrix" % filename).read()
+            exec(proj_matrix.replace(" ", "").replace(":", "="))
+            self.proj_matrix = proj_matrix
         self.has_run = True
 
     def show(self):
