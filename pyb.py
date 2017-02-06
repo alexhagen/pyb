@@ -230,9 +230,15 @@ class pyb(object):
         self.file_string += '%s = trans\n' % name
 
     def set_matl(self, obj=None, matl=None):
-        self.file_string += 'obj = bpy.context.scene.objects.get("%s")\n' % obj
-        self.file_string += 'bpy.context.scene.objects.active = obj\n'
+        # self.file_string += 'obj = bpy.context.scene.objects.get("%s")\n' % obj
+        # self.file_string += 'bpy.context.scene.objects.active = obj\n'
         self.file_string += '%s.active_material = %s\n' % (obj, matl)
+
+    def cutaway(self, points=None):
+        # first, create an extrude that will cutaway
+        pass
+        # then, select all objects
+        # then subtract the extrude object
 
     def look_at(self, target=None):
         self.file_string += 'camera_track.target = (bpy.data.objects["%s"])\n' % target
