@@ -140,11 +140,12 @@ class pyb(object):
         :param float K: the coefficient :math:`K`
         """
         self.name = name
-        self.file_string += 'bpy.ops.mesh.primitive_xyz_function_surface(x_eq="cos(v)*(1+cos(u))*sin(v/3)", z_eq="sin(v)*(1.3+cos(u))*sin(v/8)")\n'
-        self.file_string += 'bpy.context.object.name = "%s"\n' % (name)
-        self.file_string += 'bpy.context.object.location = (%15.10e, %15.10e, %15.10e)\n' % (c[0], c[1], c[2])
-        self.file_string += 'bpy.context.object.scale = (%15.10e, %15.10e, %15.10e)\n' % (r, r, r)
-        self.file_string += 'bpy.ops.object.transform_apply(location=True, scale=True)\n'
+        self.file_string += 'bpy.ops.mesh.primitive_xyz_function_surface(x_eq="u", y_eq="v", z_eq="")\n'
+        self.file_string += 'obj = bpy.data.objects.new("%s", mesh_data)\n' % (name)
+        self.file_string += 'scene = bpy.context.scene\n'
+        self.file_string += 'scene.objects.link(obj)\n'
+        self.file_string += 'obj.select = True\n'
+        self.file_string += 'scene.objects.active = obj\n'
         self.file_string += '%s = bpy.context.object\n' % (name)
         if color is not None and not emis:
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
@@ -198,8 +199,8 @@ class pyb(object):
             self.emis(name="%s_color" % name, color=color)
             self.set_matl(obj=name, matl="%s_color" % name)
 
-    def cone(self, c=(0., 0., 0.), r1=None, r2=None, h=None, name="cone", color=None, direction='z',
-            alpha=1.0, emis=False):
+    def cone(self, c=(0., 0., 0.), r1=None, r2=None, h=None, name="cone",
+             color=None, direction='z', alpha=1.0, emis=False):
         """ ``cone`` makes a truncated cone with height ``h`` and radii ``r1``
             and ``r2``.
 
@@ -243,15 +244,18 @@ class pyb(object):
             else:
                 rotdir = 2
         rotation[rotdir] = np.pi/2.
-        axis = [r, r, r]
+        # axis = [r, r, r]
         c = list(c)
-        axis[direction] = h/2.
+        # axis[direction] = h/2.
         c[direction] += h/2.
-        self.file_string += 'bpy.context.object.rotation_euler = (%15.10e, %15.10e, %15.10e)\n' % (rotation[0], rotation[1], rotation[2])
+        self.file_string += 'bpy.context.object.rotation_euler = '
+        self.file_string += '(%15.10e, %15.10e, %15.10e)\n' % \
+            (rotation[0], rotation[1], rotation[2])
         self.file_string += 'bpy.ops.object.transform_apply(rotation=True)\n'
-        self.file_string += 'bpy.context.object.location = (%15.10e, %15.10e, %15.10e)\n' % (c[0], c[1], c[2])
-        self.file_string += 'bpy.context.object.scale = (%15.10e, %15.10e, %15.10e)\n' % (axis[0], axis[1], axis[2])
-        self.file_string += 'bpy.ops.object.transform_apply(location=True, scale=True)\n'
+        self.file_string += 'bpy.context.object.location = '
+        self.file_string += '(%15.10e, %15.10e, %15.10e)\n' % \
+            (c[0], c[1], c[2])
+        self.file_string += 'bpy.ops.object.transform_apply(location=True)\n'
         self.file_string += '%s = bpy.context.object\n' % (name)
         if color is not None and not emis:
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
