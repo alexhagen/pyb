@@ -59,6 +59,39 @@ directory, if you can&#8217;t find the files.</p>
 <dd></dd></dl>
 
 <dl class="method">
+<dt id="pyb.pyb.cone">
+<code class="descname">cone</code><span class="sig-paren">(</span><em>c=(0.0</em>, <em>0.0</em>, <em>0.0)</em>, <em>r1=None</em>, <em>r2=None</em>, <em>h=None</em>, <em>name='cone'</em>, <em>color=None</em>, <em>direction='z'</em>, <em>alpha=1.0</em>, <em>emis=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyb.html#pyb.cone"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyb.pyb.cone" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="docutils literal"><span class="pre">cone</span></code> makes a truncated cone with height <code class="docutils literal"><span class="pre">h</span></code> and radii <code class="docutils literal"><span class="pre">r1</span></code>
+and <code class="docutils literal"><span class="pre">r2</span></code>.</p>
+<p><code class="docutils literal"><span class="pre">cone</span></code> creates a truncated cone with the center of the cone at
+point <code class="docutils literal"><span class="pre">c</span></code>, a tuple of three dimensions.  Then, the base has radius
+<code class="docutils literal"><span class="pre">r1</span></code>, the tip has radius <code class="docutils literal"><span class="pre">r2</span></code>, and the base and tip are
+separated by <code class="docutils literal"><span class="pre">h</span></code>.</p>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">Make sure rotation works here</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>c</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a>) &#8211; the centerpoint of the cone</li>
+<li><strong>r1</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; radius of the base</li>
+<li><strong>r2</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; radius of the tip</li>
+<li><strong>h</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; distance between <code class="docutils literal"><span class="pre">r1</span></code> and <code class="docutils literal"><span class="pre">r2</span></code></li>
+<li><strong>direction</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; axis which coincides with the rotational
+axis of the cone, either <code class="docutils literal"><span class="pre">'x'</span></code>, <code class="docutils literal"><span class="pre">'y'</span></code>, or <code class="docutils literal"><span class="pre">'z'</span></code>. The
+direction can be changed by reversing <code class="docutils literal"><span class="pre">r1</span></code> and <code class="docutils literal"><span class="pre">r2</span></code>, so
+<code class="docutils literal"><span class="pre">'+z'</span></code> won&#8217;t work.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="pyb.pyb.cutaway">
 <code class="descname">cutaway</code><span class="sig-paren">(</span><em>points=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyb.html#pyb.cutaway"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyb.pyb.cutaway" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -74,6 +107,40 @@ directory, if you can&#8217;t find the files.</p>
 <dd></dd></dl>
 
 <dl class="method">
+<dt id="pyb.pyb.gq">
+<code class="descname">gq</code><span class="sig-paren">(</span><em>A=0.0</em>, <em>B=0.0</em>, <em>C=0.0</em>, <em>D=0.0</em>, <em>E=0.0</em>, <em>F=0.0</em>, <em>G=0.0</em>, <em>H=0.0</em>, <em>J=0.0</em>, <em>K=0.0</em>, <em>name='gq'</em>, <em>color=None</em>, <em>alpha=1.0</em>, <em>emis=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyb.html#pyb.gq"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyb.pyb.gq" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="docutils literal"><span class="pre">gq</span></code> adds a generalized quadratic surface using the mesh.</p>
+<p><code class="docutils literal"><span class="pre">gq</span></code> adds a generalized quadratic surface using the mesh operators.
+The surface itself is defined by the function</p>
+<div class="math">
+\[\begin{split}Ax^{2}+By^{2}+Cz^{2}+Dxy+Eyz\\+Fzx+Gx+Hy+Jz+K=0\end{split}\]</div>
+<p>and takes inputs of <span class="math">\(A\)</span>, <span class="math">\(B\)</span>, <span class="math">\(C\)</span>, <span class="math">\(D\)</span>,
+<span class="math">\(E\)</span>, <span class="math">\(F\)</span>, <span class="math">\(G\)</span>, <span class="math">\(H\)</span>, <span class="math">\(J\)</span>, and <span class="math">\(K\)</span>.</p>
+<p>Note that this object is not necessarily closed, so it may need to be
+added to or subtracted from other surfaces or it will look unrealistic.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>A</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the coefficient <span class="math">\(A\)</span></li>
+<li><strong>B</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the coefficient <span class="math">\(B\)</span></li>
+<li><strong>C</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the coefficient <span class="math">\(C\)</span></li>
+<li><strong>D</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the coefficient <span class="math">\(D\)</span></li>
+<li><strong>E</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the coefficient <span class="math">\(E\)</span></li>
+<li><strong>F</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the coefficient <span class="math">\(F\)</span></li>
+<li><strong>G</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the coefficient <span class="math">\(G\)</span></li>
+<li><strong>H</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the coefficient <span class="math">\(H\)</span></li>
+<li><strong>J</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the coefficient <span class="math">\(J\)</span></li>
+<li><strong>K</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the coefficient <span class="math">\(K\)</span></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="pyb.pyb.look_at">
 <code class="descname">look_at</code><span class="sig-paren">(</span><em>target=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyb.html#pyb.look_at"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyb.pyb.look_at" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -87,7 +154,7 @@ directory, if you can&#8217;t find the files.</p>
 <dt id="pyb.pyb.rcc">
 <code class="descname">rcc</code><span class="sig-paren">(</span><em>c=None</em>, <em>r=None</em>, <em>h=None</em>, <em>name='rcc'</em>, <em>color=None</em>, <em>direction='z'</em>, <em>alpha=1.0</em>, <em>emis=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyb.html#pyb.rcc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyb.pyb.rcc" title="Permalink to this definition">¶</a></dt>
 <dd><p>makes a cylinder with center point <code class="docutils literal"><span class="pre">c</span></code>, radius <code class="docutils literal"><span class="pre">r</span></code>, and height <code class="docutils literal"><span class="pre">h</span></code></p>
-<div class="admonition-todo admonition" id="index-0">
+<div class="admonition-todo admonition" id="index-1">
 <p class="first admonition-title">Todo</p>
 <p class="last">Make sure rotation works here</p>
 </div>
