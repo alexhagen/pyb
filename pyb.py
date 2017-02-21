@@ -111,6 +111,48 @@ class pyb(object):
             self.emis(name="%s_color" % name, color=color)
             self.set_matl(obj=name, matl="%s_color" % name)
 
+    def gq(self, A=0.0, B=0.0, C=0.0, D=0.0, E=0.0, F=0.0, G=0.0, H=0.0, J=0.0,
+           K=0.0, name="gq", color=None, alpha=1.0, emis=False):
+        r""" ``gq`` adds a generalized quadratic surface using the mesh.
+
+        ``gq`` adds a generalized quadratic surface using the mesh operators.
+        The surface itself is defined by the function
+
+        .. math::
+
+            Ax^{2}+By^{2}+Cz^{2}+Dxy+Eyz\\+Fzx+Gx+Hy+Jz+K=0
+
+        and takes inputs of :math:`A`, :math:`B`, :math:`C`, :math:`D`,
+        :math:`E`, :math:`F`, :math:`G`, :math:`H`, :math:`J`, and :math:`K`.
+
+        Note that this object is not necessarily closed, so it may need to be
+        added to or subtracted from other surfaces or it will look unrealistic.
+
+        :param float A: the coefficient :math:`A`
+        :param float B: the coefficient :math:`B`
+        :param float C: the coefficient :math:`C`
+        :param float D: the coefficient :math:`D`
+        :param float E: the coefficient :math:`E`
+        :param float F: the coefficient :math:`F`
+        :param float G: the coefficient :math:`G`
+        :param float H: the coefficient :math:`H`
+        :param float J: the coefficient :math:`J`
+        :param float K: the coefficient :math:`K`
+        """
+        self.name = name
+        self.file_string += 'bpy.ops.mesh.primitive_xyz_function_surface(x_eq="cos(v)*(1+cos(u))*sin(v/3)", z_eq="sin(v)*(1.3+cos(u))*sin(v/8)")\n'
+        self.file_string += 'bpy.context.object.name = "%s"\n' % (name)
+        self.file_string += 'bpy.context.object.location = (%15.10e, %15.10e, %15.10e)\n' % (c[0], c[1], c[2])
+        self.file_string += 'bpy.context.object.scale = (%15.10e, %15.10e, %15.10e)\n' % (r, r, r)
+        self.file_string += 'bpy.ops.object.transform_apply(location=True, scale=True)\n'
+        self.file_string += '%s = bpy.context.object\n' % (name)
+        if color is not None and not emis:
+            self.flat(name="%s_color" % name, color=color, alpha=alpha)
+            self.set_matl(obj=name, matl="%s_color" % name)
+        elif color is not None and emis:
+            self.emis(name="%s_color" % name, color=color)
+            self.set_matl(obj=name, matl="%s_color" % name)
+
     def rcc(self, c=None, r=None, h=None, name="rcc", color=None, direction='z',
             alpha=1.0, emis=False):
         """ makes a cylinder with center point ``c``, radius ``r``, and height ``h``
@@ -119,6 +161,68 @@ class pyb(object):
         """
         self.name = name
         self.file_string += 'bpy.ops.mesh.primitive_cylinder_add()\n'
+        self.file_string += 'bpy.context.object.name = "%s"\n' % (name)
+        rotation = [0., 0., 0.]
+        if direction == 'z':
+            direction = 2
+            rotdir = 2
+        elif direction == 'y':
+            direction = 1
+            rotdir = 0
+        elif direction == 'x':
+            direction = 0
+            rotdir = 1
+        else:
+            direction = int(direction)
+            if direction == 0:
+                rotdir = 1
+            elif direction == 1:
+                rotdir = 0
+            else:
+                rotdir = 2
+        rotation[rotdir] = np.pi/2.
+        axis = [r, r, r]
+        c = list(c)
+        axis[direction] = h/2.
+        c[direction] += h/2.
+        self.file_string += 'bpy.context.object.rotation_euler = (%15.10e, %15.10e, %15.10e)\n' % (rotation[0], rotation[1], rotation[2])
+        self.file_string += 'bpy.ops.object.transform_apply(rotation=True)\n'
+        self.file_string += 'bpy.context.object.location = (%15.10e, %15.10e, %15.10e)\n' % (c[0], c[1], c[2])
+        self.file_string += 'bpy.context.object.scale = (%15.10e, %15.10e, %15.10e)\n' % (axis[0], axis[1], axis[2])
+        self.file_string += 'bpy.ops.object.transform_apply(location=True, scale=True)\n'
+        self.file_string += '%s = bpy.context.object\n' % (name)
+        if color is not None and not emis:
+            self.flat(name="%s_color" % name, color=color, alpha=alpha)
+            self.set_matl(obj=name, matl="%s_color" % name)
+        elif color is not None and emis:
+            self.emis(name="%s_color" % name, color=color)
+            self.set_matl(obj=name, matl="%s_color" % name)
+
+    def cone(self, c=(0., 0., 0.), r1=None, r2=None, h=None, name="cone", color=None, direction='z',
+            alpha=1.0, emis=False):
+        """ ``cone`` makes a truncated cone with height ``h`` and radii ``r1``
+            and ``r2``.
+
+            ``cone`` creates a truncated cone with the center of the cone at
+            point ``c``, a tuple of three dimensions.  Then, the base has radius
+            ``r1``, the tip has radius ``r2``, and the base and tip are
+            separated by ``h``.
+
+            .. todo:: Make sure rotation works here
+
+            :param tuple c: the centerpoint of the cone
+            :param float r1: radius of the base
+            :param float r2: radius of the tip
+            :param float h: distance between ``r1`` and ``r2``
+            :param string direction: axis which coincides with the rotational
+                axis of the cone, either ``'x'``, ``'y'``, or ``'z'``. The
+                direction can be changed by reversing ``r1`` and ``r2``, so
+                ``'+z'`` won't work.
+        """
+        self.name = name
+        self.file_string += 'bpy.ops.mesh.primitive_cone_add('
+        self.file_string += 'radius1=%15.10e, radius2=%15.10e,' % (r1, r2)
+        self.file_string += ' depth=%15.10e)\n' % (h)
         self.file_string += 'bpy.context.object.name = "%s"\n' % (name)
         rotation = [0., 0., 0.]
         if direction == 'z':
