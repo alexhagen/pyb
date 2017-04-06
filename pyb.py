@@ -161,7 +161,7 @@ class pyb(object):
             .. todo:: Make sure rotation works here
         """
         self.name = name
-        self.file_string += 'bpy.ops.mesh.primitive_cylinder_add()\n'
+        self.file_string += 'bpy.ops.mesh.primitive_cylinder_add(vertices=128)\n'
         self.file_string += 'bpy.context.object.name = "%s"\n' % (name)
         rotation = [0., 0., 0.]
         if direction == 'z':
@@ -352,13 +352,15 @@ class pyb(object):
         self.file_string += 'camera_track.target = (bpy.data.objects["%s"])\n' % target
 
     def render(self, camera_location=(500, 500, 300), c=(0., 0., 0.),
-               l=(250., 250., 250.), render=True, fit=True):
+               l=(250., 250., 250.), render=True, fit=True, samples=20, res=[1920, 1080]):
+        resw = res[0]
+        resh = res[1]
         self.file_string += 'bpy.context.scene.objects.active.select = False\n'
         self.file_string += 'bpy.ops.object.visual_transform_apply()\n'
         self.file_string += 'bpy.data.scenes["Scene"].render.engine = "CYCLES"\n'
         self.file_string += 'render = bpy.data.scenes["Scene"].render\n'
-        self.file_string += 'bpy.data.scenes["Scene"].render.resolution_x = 1920. * 2.\n'
-        self.file_string += 'bpy.data.scenes["Scene"].render.resolution_y = 1080. * 2.\n'
+        self.file_string += 'bpy.data.scenes["Scene"].render.resolution_x = %d * 2.\n' % resw
+        self.file_string += 'bpy.data.scenes["Scene"].render.resolution_y = %d * 2.\n' % resh
         self.file_string += 'world = bpy.data.worlds["World"]\n'
         self.file_string += 'world.use_nodes = True\n'
         self.file_string += 'empty = bpy.data.objects.new("Empty", None)\n'
@@ -383,25 +385,13 @@ class pyb(object):
         self.file_string += 'bg.inputs[1].default_value = 1.0\n'
         self.file_string += 'bpy.data.scenes["Scene"].render.filepath = "%s" + ".png"\n' % self.filename
         self.file_string += 'bpy.context.scene.render.use_freestyle = True\n'
-        # self.file_string += 'for object in bpy.data.objects:\n'
-        # self.file_string += '    if object.type == "MESH":\n'
-        # self.file_string += '        for edge in object.data.edges:\n'
-        # self.file_string += '            edge.use_freestyle_mark = True\n'
-
-        # self.file_string += '        #show the marked edges\n'
-        # self.file_string += '        object.data.show_freestyle_edge_marks = True\n'
-        # self.file_string += 'bpy.data.scenes["Scene"].SceneRenderLayer.FreestyleLineSet.select_crease = False\n'
-        # self.file_string += 'from freestyle import FreestyleSettings\n'
-        # self.file_string += 'FreestyleSettings.crease_angle = "165d"\n'
-        # self.file_string += 'bpy.data.scenes["Scene"].FreestyleLineSet.select_edge_mark = True\n'
-        # self.file_string += 'bpy.context.scene.cycles.use_progressive_refine = True\n'
-        self.file_string += 'bpy.context.scene.cycles.samples = 10\n'
-        self.file_string += 'bpy.context.scene.cycles.max_bounces = 16\n'
+        self.file_string += 'bpy.context.scene.cycles.samples = %d\n' % samples
+        self.file_string += 'bpy.context.scene.cycles.max_bounces = 32\n'
         self.file_string += 'bpy.context.scene.cycles.min_bounces = 3\n'
         self.file_string += 'bpy.context.scene.cycles.glossy_bounces = 16\n'
-        self.file_string += 'bpy.context.scene.cycles.transmission_bounces = 16\n'
+        self.file_string += 'bpy.context.scene.cycles.transmission_bounces = 32\n'
         self.file_string += 'bpy.context.scene.cycles.volume_bounces = 4\n'
-        self.file_string += 'bpy.context.scene.cycles.transparent_max_bounces = 16\n'
+        self.file_string += 'bpy.context.scene.cycles.transparent_max_bounces = 32\n'
         self.file_string += 'bpy.context.scene.cycles.transparent_min_bounces = 8\n'
         self.file_string += 'bpy.data.scenes["Scene"].cycles.film_transparent = True\n'
         self.file_string += 'bpy.context.scene.cycles.filter_glossy = 0.05\n'
@@ -419,7 +409,7 @@ class pyb(object):
         self.file_string += 'import os\n'
         self.file_string += 'proj_matrix = "[[%15.10e, %15.10e, %15.10e, %15.10e],[%15.10e, %15.10e, %15.10e, %15.10e],[%15.10e, %15.10e, %15.10e, %15.10e]]" % (P[0][0], P[0][1], P[0][2], P[0][3], P[1][0], P[1][1], P[1][2], P[1][3], P[2][0], P[2][1], P[2][2], P[2][3])\n'
         if render:
-            self.file_string += 'os.system("convert %s.png -set proj_matrix \'%%s\' %s.png" %% proj_matrix)' % (self.filename, self.filename)
+            self.file_string += 'os.system("convert %s.png -set proj_matrix \'%%s\' %s.png" %% proj_matrix)\n' % (self.filename, self.filename)
 
     def run(self, filename=None, **kwargs):
         """ Opens a blender instance and runs the generated model rendering
