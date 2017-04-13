@@ -95,6 +95,21 @@ class pyb(object):
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
             self.set_matl(obj=name, matl="%s_color" % name)
 
+    def plane(self, x1=None, x2=None, y1=None, y2=None, z1=None, z2=None, c=None,
+            l=None, name="rpp", color=None, alpha=1.0, verts=None):
+        self.name = name
+        if c is not None and l is not None:
+            self.file_string += 'bpy.ops.mesh.primitive_plane_add()\n'
+            self.file_string += 'bpy.context.object.name = "%s"\n' % (name)
+            self.file_string += 'bpy.context.object.location = (%15.10e, %15.10e, %15.10e)\n' % (c[0], c[1], c[2])
+            self.file_string += 'bpy.context.object.scale = (%15.10e, %15.10e, %15.10e)\n' % (l[0]/2., l[1]/2., l[2]/2.)
+            self.file_string += 'bpy.context.object.rotation = (%15.10e, %15.10e, %15.10e)\n' % (r[0]/2., r[1]/2., r[2]/2.)
+            self.file_string += 'bpy.ops.object.transform_apply(location=True, scale=True)\n'
+            self.file_string += '%s = bpy.context.object\n' % (name)
+        if color is not None:
+            self.flat(name="%s_color" % name, color=color, alpha=alpha)
+            self.set_matl(obj=name, matl="%s_color" % name)
+
     def sph(self, c=None, r=None, name="sph", color=None, alpha=1.0,
             emis=False):
         self.name = name
@@ -336,6 +351,28 @@ class pyb(object):
         rgb = Color(color).rgb
         self.file_string += 'trans.diffuse_color = (%6.4f, %6.4f, %6.4f)\n' % (rgb[0], rgb[1], rgb[2])
         self.file_string += '%s = trans\n' % name
+
+    def image(self, name="Image", fname=None, alpha=1.0, volume=False):
+        rgb = Color(color).rgb
+        self.file_string += 'source = bpy.data.materials.new("%s")\n' % name
+        self.file_string += 'source.use_nodes = True\n'
+        self.file_string += 'nodes = source.node_tree.nodes\n'
+        self.file_string += 'for key in nodes.values():\n'
+        self.file_string += '    nodes.remove(key)\n'
+        self.file_string += 'links = source.node_tree.links\n'
+        self.file_string += 'e = nodes.new(type="ShaderNodeEmission")\n'
+        self.file_string += 'e.inputs[0].default_value = (%6.4f, %6.4f, %6.4f, %6.4f)\n' % (rgb[0], rgb[1], rgb[2], alpha)
+        self.file_string += 'e.inputs[1].default_value = 5.0\n'
+        self.file_string += '# Make a material output\n'
+        self.file_string += 'material_output = nodes.new("ShaderNodeOutputMaterial")\n'
+        self.file_string += '# link from the shader and displacement groups to the outputs\n'
+        if volume:
+            self.file_string += 'links.new(e.outputs[0], material_output.inputs[1])\n'
+        else:
+            self.file_string += 'links.new(e.outputs[0], material_output.inputs[0])\n'
+        self.file_string += 'for node in nodes:\n'
+        self.file_string += '    node.update()\n'
+        self.file_string += '%s = source\n' % name
 
     def set_matl(self, obj=None, matl=None):
         # self.file_string += 'obj = bpy.context.scene.objects.get("%s")\n' % obj
