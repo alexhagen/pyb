@@ -4,6 +4,7 @@ import tempfile
 from colour import Color
 import numpy as np
 import shutil
+from os.path import expanduser
 
 class pyb(object):
     """ An object to save commands for blender 3d plotting and render
@@ -32,7 +33,8 @@ class pyb(object):
             :returns: None
         """
         self.file_string += 'import bpy\n'
-        self.file_string += open('/home/ahagen/code/pyb/blender_mats_utils.py', 'r').read()
+        home = expanduser("~")
+        self.file_string += open(home + '/code/pyb/blender_mats_utils.py', 'r').read()
         self.file_string += 'scene = bpy.context.scene\n'
         self.file_string += '# First, delete the default cube\n'
         self.file_string += 'bpy.ops.object.delete()\n'
