@@ -115,7 +115,7 @@ class pyb(object):
     def sph(self, c=None, r=None, name="sph", color=None, alpha=1.0,
             emis=False):
         self.name = name
-        self.file_string += 'bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=8)\n'
+        self.file_string += 'bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=4)\n'
         self.file_string += 'bpy.context.object.name = "%s"\n' % (name)
         self.file_string += 'bpy.context.object.location = (%15.10e, %15.10e, %15.10e)\n' % (c[0], c[1], c[2])
         self.file_string += 'bpy.context.object.scale = (%15.10e, %15.10e, %15.10e)\n' % (r, r, r)
