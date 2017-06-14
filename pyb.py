@@ -5,6 +5,7 @@ from colour import Color
 import numpy as np
 import shutil
 from os.path import expanduser
+import sys
 
 class pyb(object):
     """ An object to save commands for blender 3d plotting and render
@@ -454,17 +455,21 @@ class pyb(object):
         """ Opens a blender instance and runs the generated model rendering
         """
         self.render(**kwargs)
+        if sys.platform == "darwin":
+            blender_path = '/Applications/blender.app/Contents/MacOS/blender'
+        else:
+            blender_path = 'blender'
         with open(self.filename + '.py', 'w') as f:
             f.write(self.file_string)
-            cmd = "blender --background --python %s" % self.filename + '.py'
-            print cmd
+            cmd = "{bpath} --background --python {fname}.py".format(bpath=blender_path, fname=self.filename)
+            #print cmd
             #print os.popen('cat %s' % self.filename + '.py').read()
         render = subprocess.Popen(cmd, shell=True)
         render.communicate()
         if 'render' in kwargs:
             rendered = kwargs['render']
         else:
-            rendered = true
+            rendered = True
         if filename is not None and rendered:
             shutil.copy(self.filename + ".png", filename)
             proj_matrix = os.popen("identify -verbose %s | grep proj_matrix" % filename).read()
