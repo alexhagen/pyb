@@ -297,7 +297,8 @@ class pyb(object):
         self.file_string += '%s = bpy.context.object.modifiers.new(type="BOOLEAN", name="%s")\n' % (name, left + "_" + operation.lower() + "_" + right)
         self.file_string += '%s.operation = "%s"\n' % (name, operation)
         self.file_string += '%s.object = %s\n' % (name, right)
-        self.file_string += '%s.double_threshold = 0.1\n' % name
+        #self.file_string += '%s.double_threshold = 0.1\n' % name
+        self.file_string += '%s.solver = "CARVE"\n' % (name)
         self.file_string += 'bpy.ops.object.modifier_apply(apply_as="DATA", modifier="%s")\n' % (left + "_" + operation.lower() + "_" + right)
         self.file_string += 'bpy.context.scene.objects.unlink(%s)\n' % right
         self.file_string += 'bpy.context.scene.objects.active = bpy.context.object\n'
@@ -449,6 +450,11 @@ class pyb(object):
         self.file_string += 'proj_matrix = "[[%15.10e, %15.10e, %15.10e, %15.10e],[%15.10e, %15.10e, %15.10e, %15.10e],[%15.10e, %15.10e, %15.10e, %15.10e]]" % (P[0][0], P[0][1], P[0][2], P[0][3], P[1][0], P[1][1], P[1][2], P[1][3], P[2][0], P[2][1], P[2][2], P[2][3])\n'
         if render:
             self.file_string += 'os.system("convert %s.png -set proj_matrix \'%%s\' %s.png" %% proj_matrix)\n' % (self.filename, self.filename)
+
+    def open(self, blend=None):
+        if '.blend' not in blend:
+            blend = blend + '.blend'
+        self.file_string += 'bpy.ops.wm.open_mainfile(filepath="{blend}")\n'.format(blend=blend)
 
     def run(self, filename=None, **kwargs):
         """ Opens a blender instance and runs the generated model rendering
