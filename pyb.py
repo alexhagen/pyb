@@ -6,6 +6,7 @@ import numpy as np
 import shutil
 from os.path import expanduser
 import sys
+import copy
 
 class pyb(object):
     """ An object to save commands for blender 3d plotting and render
@@ -382,6 +383,11 @@ class pyb(object):
         # self.file_string += 'obj = bpy.context.scene.objects.get("%s")\n' % obj
         # self.file_string += 'bpy.context.scene.objects.active = obj\n'
         self.file_string += '%s.active_material = %s\n' % (obj, matl)
+
+    def split_scene(self, filename):
+        newscene = copy.deepcopy(self)
+        newscene.filename = filename
+        return newscene
 
     def cutaway(self, points=None):
         # first, create an extrude that will cutaway
