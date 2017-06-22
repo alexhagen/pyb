@@ -7,6 +7,12 @@ import shutil
 from os.path import expanduser
 import sys
 import copy
+from IPython.display import display, HTML
+import random
+from psgv import psgv
+
+cutawayid = psgv.psgv('__cutaway_id__')
+cutawayid.val = 1
 
 class pyb(object):
     """ An object to save commands for blender 3d plotting and render
@@ -22,6 +28,7 @@ class pyb(object):
         self.filename = "brender_01"
         self.has_run = False
         self.proj_matrix = None
+        self._draft = False
         self.scene_setup()
 
     def scene_setup(self):
@@ -289,11 +296,16 @@ class pyb(object):
     def union(self, left, right):
         self.boolean(left=left, right=right, operation="UNION")
 
+    def intersect(self, left, right):
+        self.boolean(left=left, right=right, operation="INTERSECT")
+
     def boolean(self, left, right, operation):
         if operation == "DIFFERENCE":
             op = 'less'
         elif operation == "UNION":
             op = 'plus'
+        elif operation == "INTERSECT":
+            op = 'inter'
         name = left + "_" + operation.lower() + "_" + right
         self.file_string += 'bpy.context.scene.objects.active = %s\n' % (left)
         self.file_string += '%s = bpy.context.object.modifiers.new(type="BOOLEAN", name="%s")\n' % (name, left + "_" + operation.lower() + "_" + right)
@@ -389,17 +401,45 @@ class pyb(object):
         newscene.filename = filename
         return newscene
 
-    def cutaway(self, points=None):
+    def draft(self, i=True):
+        self._draft = i
+        return self
+
+    def cutaway(self, c=(0., 0., 0.), l=(0., 0., 0.)):
         # first, create an extrude that will cutaway
-        pass
-        # then, select all objects
-        # then subtract the extrude object
+        name = 'cutaway{iid}'.format(iid=cutawayid.val)
+        cutawayid.val += 1
+        self.file_string += 'bpy.ops.mesh.primitive_cube_add()\n'
+        self.file_string += 'bpy.context.object.name = "%s"\n' % (name)
+        self.file_string += 'bpy.context.object.location = (%15.10e, %15.10e, %15.10e)\n' % (c[0], c[1], c[2])
+        self.file_string += 'bpy.context.object.scale = (%15.10e, %15.10e, %15.10e)\n' % (l[0]/2., l[1]/2., l[2]/2.)
+        self.file_string += 'bpy.ops.object.transform_apply(location=True, scale=True)\n'
+        self.file_string += '%s = bpy.context.object\n' % (name)
+        self.file_string += 'bpy.context.scene.objects.active = bpy.data.objects[0]\n'
+        self.file_string += 'for ob in bpy.data.objects:\n'
+        self.file_string += '    bpy.context.scene.objects.active = ob\n'
+        self.file_string += '    if ob.name != "%s":\n' % name
+        self.file_string += '        obname = ob.name\n'
+        self.file_string += '        try:\n'
+        self.file_string += '            _cutaway = bpy.context.object.modifiers.new(type="BOOLEAN", name=obname + "cut")\n'
+        self.file_string += '            _cutaway.operation = "DIFFERENCE"\n'
+        self.file_string += '            _cutaway.object = %s\n' % name
+        self.file_string += '            _cutaway.solver = "CARVE"\n'
+        self.file_string += '            bpy.ops.object.modifier_apply(apply_as="DATA", modifier=obname + "cut")\n'
+        self.file_string += '        except AttributeError:\n'
+        self.file_string += '            pass\n'
+        self.file_string += 'bpy.context.scene.objects.unlink(%s)\n' % name
+        self.file_string += 'bpy.context.scene.objects.active = bpy.context.object\n'
 
     def look_at(self, target=None):
         self.file_string += 'camera_track.target = (bpy.data.objects["%s"])\n' % target
 
     def render(self, camera_location=(500, 500, 300), c=(0., 0., 0.),
-               l=(250., 250., 250.), render=True, fit=True, samples=20, res=[1920, 1080]):
+               l=(250., 250., 250.), render=True, fit=True, samples=20,
+               res=[1920, 1080], draft=False):
+        if self._draft or draft:
+            res = [640, 480]
+            samples = 10
         resw = res[0]
         resh = res[1]
         self.file_string += 'bpy.context.scene.objects.active.select = False\n'
@@ -493,5 +533,8 @@ class pyb(object):
         """ Opens the image if it has been rendered
         """
         if self.has_run:
+            iid = random.randint(0, 1E9)
+            html_str = '<img src="/files/mcnp/active/{fname}.png?{iid}" \/>'.format(fname=self.filename, iid=iid)
+            return display(HTML(html_str))
             cmd = "eog %s.png" % self.filename
             subprocess.Popen(cmd, shell=True)
