@@ -405,10 +405,12 @@ class pyb(object):
         self._draft = i
         return self
 
-    def cutaway(self, c=(0., 0., 0.), l=(0., 0., 0.)):
+    def cutaway(self, c=(0., 0., 0.), l=(0., 0., 0.),
+                exclude='asdlfjkals;djkfasdlfj'):
         # first, create an extrude that will cutaway
         name = 'cutaway{iid}'.format(iid=cutawayid.val)
         cutawayid.val += 1
+        self.file_string += 'exclude = "%s"\n' % (exclude)
         self.file_string += 'bpy.ops.mesh.primitive_cube_add()\n'
         self.file_string += 'bpy.context.object.name = "%s"\n' % (name)
         self.file_string += 'bpy.context.object.location = (%15.10e, %15.10e, %15.10e)\n' % (c[0], c[1], c[2])
@@ -418,7 +420,7 @@ class pyb(object):
         self.file_string += 'bpy.context.scene.objects.active = bpy.data.objects[0]\n'
         self.file_string += 'for ob in bpy.data.objects:\n'
         self.file_string += '    bpy.context.scene.objects.active = ob\n'
-        self.file_string += '    if ob.name != "%s":\n' % name
+        self.file_string += '    if ob.name != "%s" and exclude not in ob.name:\n' % name
         self.file_string += '        obname = ob.name\n'
         self.file_string += '        try:\n'
         self.file_string += '            _cutaway = bpy.context.object.modifiers.new(type="BOOLEAN", name=obname + "cut")\n'
