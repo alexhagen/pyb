@@ -438,7 +438,7 @@ class pyb(object):
 
     def render(self, camera_location=(500, 500, 300), c=(0., 0., 0.),
                l=(250., 250., 250.), render=True, fit=True, samples=20,
-               res=[1920, 1080], draft=False):
+               res=[1920, 1080], draft=False, **kwargs):
         if self._draft or draft:
             res = [640, 480]
             samples = 10
