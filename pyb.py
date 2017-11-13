@@ -489,8 +489,8 @@ class pyb(object):
             self.file_string += 'bpy.ops.render.render( write_still=True )\n'
         self.file_string += 'modelview_matrix = camera.matrix_world.inverted()\n'
         self.file_string += 'projection_matrix = camera.calc_matrix_camera(\n'
-        self.file_string += '        render.resolution_x,\n'
-        self.file_string += '        render.resolution_y,\n'
+        self.file_string += '        render.resolution_x / 2.0,\n'
+        self.file_string += '        render.resolution_y / 2.0,\n'
         self.file_string += '        render.pixel_aspect_x,\n'
         self.file_string += '        render.pixel_aspect_y,\n'
         self.file_string += '        )\n'
@@ -505,7 +505,7 @@ class pyb(object):
             blend = blend + '.blend'
         self.file_string += 'bpy.ops.wm.open_mainfile(filepath="{blend}")\n'.format(blend=blend)
 
-    def run(self, filename=None, **kwargs):
+    def run(self, filename=None, block=True, **kwargs):
         """ Opens a blender instance and runs the generated model rendering
         """
         self.render(**kwargs)
@@ -519,12 +519,13 @@ class pyb(object):
             #print cmd
             #print os.popen('cat %s' % self.filename + '.py').read()
         render = subprocess.Popen(cmd, shell=True)
-        render.communicate()
+        if block:
+            render.communicate()
         if 'render' in kwargs:
             rendered = kwargs['render']
         else:
             rendered = True
-        if filename is not None and rendered:
+        if filename is not None and rendered and block:
             shutil.copy(self.filename + ".png", filename)
             proj_matrix = os.popen("identify -verbose %s | grep proj_matrix" % filename).read()
             exec(proj_matrix.replace(" ", "").replace(":", "="))
