@@ -84,7 +84,8 @@ class pyb(object):
         self.file_string += 'bpy.context.scene.objects.active = lamp_object\n'
 
     def rpp(self, x1=None, x2=None, y1=None, y2=None, z1=None, z2=None, c=None,
-            l=None, name="rpp", color=None, alpha=1.0, verts=None):
+            l=None, name="rpp", color=None, alpha=1.0, verts=None,
+                    emis=False):
         self.name = name
         if c is not None and l is not None:
             self.file_string += 'bpy.ops.mesh.primitive_cube_add()\n'
@@ -102,12 +103,16 @@ class pyb(object):
             self.file_string += 'faces = [(0,1,3,2), (4,5,7,6), (0,1,5,4), (2,3,7,6), (1,3,7,5), (0,2,6,4)]\n'
             self.file_string += 'mesh.from_pydata(verts, [], faces)\n'
             self.file_string += 'mesh.update(calc_edges=True)\n'
-        if color is not None:
+        if color is not None and not emis:
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
+            self.set_matl(obj=name, matl="%s_color" % name)
+        elif color is not None and emis:
+            self.emis(name="%s_color" % name, color=color)
             self.set_matl(obj=name, matl="%s_color" % name)
 
     def plane(self, x1=None, x2=None, y1=None, y2=None, z1=None, z2=None, c=None,
-            l=None, name="rpp", color=None, alpha=1.0, verts=None):
+            l=None, name="rpp", color=None, alpha=1.0, verts=None,
+                    emis=False):
         self.name = name
         if c is not None and l is not None:
             self.file_string += 'bpy.ops.mesh.primitive_plane_add()\n'
@@ -117,8 +122,11 @@ class pyb(object):
             self.file_string += 'bpy.context.object.rotation = (%15.10e, %15.10e, %15.10e)\n' % (r[0]/2., r[1]/2., r[2]/2.)
             self.file_string += 'bpy.ops.object.transform_apply(location=True, scale=True)\n'
             self.file_string += '%s = bpy.context.object\n' % (name)
-        if color is not None:
+        if color is not None and not emis:
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
+            self.set_matl(obj=name, matl="%s_color" % name)
+        elif color is not None and emis:
+            self.emis(name="%s_color" % name, color=color)
             self.set_matl(obj=name, matl="%s_color" % name)
 
     def sph(self, c=None, r=None, name="sph", color=None, alpha=1.0,
