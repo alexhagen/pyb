@@ -107,7 +107,7 @@ class pyb(object):
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
             self.set_matl(obj=name, matl="%s_color" % name)
         elif color is not None and emis:
-            self.emis(name="%s_color" % name, color=color)
+            self.emis(name="%s_color" % name, alpha=alpha, color=color)
             self.set_matl(obj=name, matl="%s_color" % name)
 
     def plane(self, x1=None, x2=None, y1=None, y2=None, z1=None, z2=None, c=None,
@@ -126,7 +126,7 @@ class pyb(object):
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
             self.set_matl(obj=name, matl="%s_color" % name)
         elif color is not None and emis:
-            self.emis(name="%s_color" % name, color=color)
+            self.emis(name="%s_color" % name, alpha=alpha, color=color)
             self.set_matl(obj=name, matl="%s_color" % name)
 
     def sph(self, c=None, r=None, name="sph", color=None, alpha=1.0,
@@ -142,7 +142,7 @@ class pyb(object):
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
             self.set_matl(obj=name, matl="%s_color" % name)
         elif color is not None and emis:
-            self.emis(name="%s_color" % name, color=color)
+            self.emis(name="%s_color" % name, alpha=alpha, color=color)
             self.set_matl(obj=name, matl="%s_color" % name)
 
     def gq(self, A=0.0, B=0.0, C=0.0, D=0.0, E=0.0, F=0.0, G=0.0, H=0.0, J=0.0,
@@ -357,16 +357,16 @@ class pyb(object):
         self.file_string += 'for key in nodes.values():\n'
         self.file_string += '    nodes.remove(key)\n'
         self.file_string += 'links = source.node_tree.links\n'
-        self.file_string += 'e = nodes.new(type="ShaderNodeEmission")\n'
-        self.file_string += 'e.inputs[0].default_value = (%6.4f, %6.4f, %6.4f, %6.4f)\n' % (rgb[0], rgb[1], rgb[2], alpha)
-        self.file_string += 'e.inputs[1].default_value = 5.0\n'
-        self.file_string += '# Make a material output\n'
-        self.file_string += 'material_output = nodes.new("ShaderNodeOutputMaterial")\n'
-        self.file_string += '# link from the shader and displacement groups to the outputs\n'
-        if volume:
-            self.file_string += 'links.new(e.outputs[0], material_output.inputs[1])\n'
-        else:
-            self.file_string += 'links.new(e.outputs[0], material_output.inputs[0])\n'
+        self.file_string += '%s_e = nodes.new(type="ShaderNodeEmission")\n' % name
+        self.file_string += '%s_e.inputs[0].default_value = (%6.4f, %6.4f, %6.4f, %6.4f)\n' % (name, rgb[0], rgb[1], rgb[2], alpha)
+        self.file_string += '%s_e.inputs[1].default_value = 5.0\n' % name
+        self.file_string += '%s_glass = nodes.new("ShaderNodeBsdfTransparent")\n' % name
+        self.file_string += '%s_mix = nodes.new("ShaderNodeMixShader")\n' % name
+        self.file_string += 'links.new(%s_e.outputs[0], %s_mix.inputs[1])\n' % (name, name)
+        self.file_string += 'links.new(%s_glass.outputs[0], %s_mix.inputs[2])\n' % (name, name)
+        self.file_string += '%s_mix.inputs[0].default_value = %6.4f\n' % (name, 1.0 - alpha)
+        self.file_string += '%s_material_output = nodes.new("ShaderNodeOutputMaterial")\n' % name
+        self.file_string += 'links.new(%s_mix.outputs[0], %s_material_output.inputs[0])\n' % (name, name)
         self.file_string += 'for node in nodes:\n'
         self.file_string += '    node.update()\n'
         self.file_string += '%s = source\n' % name
