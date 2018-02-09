@@ -383,8 +383,9 @@ class pyb(object):
         self.file_string += 'trans.diffuse_color = (%6.4f, %6.4f, %6.4f)\n' % (rgb[0], rgb[1], rgb[2])
         self.file_string += '%s = trans\n' % name
 
-    def image(self, name="Image", fname=None, alpha=1.0, volume=False):
-        #rgb = Color(color).rgb
+    def image(self, name="Image", fname=None, alpha=1.0, volume=False,
+              color="#ffffff"):
+        rgb = Color(color).rgb
         self.file_string += 'source = bpy.data.materials.new("%s")\n' % name
         self.file_string += 'source.use_nodes = True\n'
         self.file_string += 'nodes = source.node_tree.nodes\n'
