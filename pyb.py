@@ -395,9 +395,12 @@ class pyb(object):
         self.file_string += '%s_e = nodes.new(type="ShaderNodeEmission")\n' % name
         self.file_string += '%s_e.inputs[0].default_value = (%6.4f, %6.4f, %6.4f, %6.4f)\n' % (name, rgb[0], rgb[1], rgb[2], 1.0)
         self.file_string += '%s_e.inputs[1].default_value = 5.0\n' % name
+        self.file_string += '%s_image = bpy.types.Image(file_format=\'PNG\')' % name
+        self.file_string += '%s_image.file_format = \'PNG\'' % name
+        self.file_string += '%s_image.filepath = \'%s\'' % (name, fname)
         self.file_string += '%s_glass = nodes.new("ShaderNodeBsdfTransparent")\n' % name
         self.file_string += '%s_mix = nodes.new("ShaderNodeMixShader")\n' % name
-        self.file_string += 'links.new(%s_e.outputs[0], %s_mix.inputs[1])\n' % (name, name)
+        self.file_string += 'links.new(%s_image.outputs[0], %s_mix.inputs[1])\n' % (name, name)
         self.file_string += 'links.new(%s_glass.outputs[0], %s_mix.inputs[2])\n' % (name, name)
         self.file_string += '%s_mix.inputs[0].default_value = %6.4f\n' % (name, 1.0 - alpha)
         self.file_string += '# Make a material output\n'
