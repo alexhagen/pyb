@@ -122,7 +122,7 @@ class pyb(object):
             self.file_string += 'bpy.context.object.name = "%s"\n' % (name)
             self.file_string += 'bpy.context.object.location = (%15.10e, %15.10e, %15.10e)\n' % (c[0], c[1], c[2])
             self.file_string += 'bpy.context.object.scale = (%15.10e, %15.10e, %15.10e)\n' % (l[0]/2., l[1]/2., l[2]/2.)
-            self.file_string += 'bpy.context.object.rotation = (%15.10e, %15.10e, %15.10e)\n' % (r[0]/2., r[1]/2., r[2]/2.)
+            #self.file_string += 'bpy.context.object.rotation = (%15.10e, %15.10e, %15.10e)\n' % (r[0]/2., r[1]/2., r[2]/2.)
             self.file_string += 'bpy.ops.object.transform_apply(location=True, scale=True)\n'
             self.file_string += '%s = bpy.context.object\n' % (name)
         if color is not None and not emis:
