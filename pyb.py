@@ -110,9 +110,9 @@ class pyb(object):
             self.emis(name="%s_color" % name, alpha=alpha, color=color)
             self.set_matl(obj=name, matl="%s_color" % name)
 
-    def plane(self, x1=None, x2=None, y1=None, y2=None, z1=None, z2=None, c=None,
-            l=None, name="rpp", color=None, alpha=1.0, verts=None,
-                    emis=False):
+    def plane(self, x1=None, x2=None, y1=None, y2=None, z1=None, z2=None,
+              c=None, l=None, name="plane", color=None, alpha=1.0, verts=None,
+              emis=False, image=None):
         self.name = name
         if c is not None and l is not None:
             self.file_string += 'bpy.ops.mesh.primitive_plane_add()\n'
@@ -127,6 +127,9 @@ class pyb(object):
             self.set_matl(obj=name, matl="%s_color" % name)
         elif color is not None and emis:
             self.emis(name="%s_color" % name, alpha=alpha, color=color)
+            self.set_matl(obj=name, matl="%s_color" % name)
+        elif image is not None:
+            self.image(name="%s_image" % name, fname=image, alpha=alpha)
             self.set_matl(obj=name, matl="%s_color" % name)
 
     def sph(self, c=None, r=None, name="sph", color=None, alpha=1.0,
