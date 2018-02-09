@@ -132,7 +132,7 @@ class pyb(object):
             self.emis(name="%s_color" % name, alpha=alpha, color=color)
             self.set_matl(obj=name, matl="%s_color" % name)
         elif image is not None:
-            self.image(name="%s_image" % name, fname=image, alpha=alpha)
+            self.image(name="%s_color" % name, fname=image, alpha=alpha)
             self.set_matl(obj=name, matl="%s_color" % name)
 
     def sph(self, c=None, r=None, name="sph", color=None, alpha=1.0,
@@ -396,9 +396,11 @@ class pyb(object):
         self.file_string += '%s_e.inputs[0].default_value = (%6.4f, %6.4f, %6.4f, %6.4f)\n' % (name, rgb[0], rgb[1], rgb[2], 1.0)
         self.file_string += '%s_e.inputs[1].default_value = 5.0\n' % name
         self.file_string += '%s_image = bpy.data.images.load(\'%s\')\n' % (name, fname)
+        self.file_string += '%s_node_texture = nodes.new(type=\'ShaderNodeTexImage\')\n' % name
+        self.file_string += '%s_node_texture.image = %s_image\n' % (name, name)
         self.file_string += '%s_glass = nodes.new("ShaderNodeBsdfTransparent")\n' % name
         self.file_string += '%s_mix = nodes.new("ShaderNodeMixShader")\n' % name
-        self.file_string += 'links.new(%s_image.outputs[0], %s_mix.inputs[1])\n' % (name, name)
+        self.file_string += 'links.new(%s_node_texture.outputs[0], %s_mix.inputs[1])\n' % (name, name)
         self.file_string += 'links.new(%s_glass.outputs[0], %s_mix.inputs[2])\n' % (name, name)
         self.file_string += '%s_mix.inputs[0].default_value = %6.4f\n' % (name, 1.0 - alpha)
         self.file_string += '# Make a material output\n'
