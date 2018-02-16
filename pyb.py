@@ -461,13 +461,14 @@ class pyb(object):
         self.file_string += 'camera_track.target = (bpy.data.objects["%s"])\n' % target
 
     def peek(self, camera_location=(500, 500, 300), c=(0., 0., 0.),
-             l=(250., 250., 250.), fit=True, **kwargs):
+             l=(250., 250., 250.), fit=True, filename=None, **kwargs):
         """Render an opengl example of the 3d scene.
 
         :param tuple camera_location: location of the camera.
         :param tuple c: scene center location
         :param tuple l: scene etents emanating from center
         :param bool fit: whether to fit the scene or not
+        :param str filename: a file path to move the rendered peek to
         """
         res = [640, 480]
         samples = 10
@@ -496,22 +497,10 @@ class pyb(object):
         self.file_string += 'camera_track.track_axis = "TRACK_NEGATIVE_Z"\n'
         self.file_string += 'camera_track.up_axis = "UP_Y"\n'
         self.look_at(target="Empty")
-        self.file_string += '# changing these values does affect the render.\n'
-        self.file_string += 'bg = world.node_tree.nodes["Background"]\n'
-        self.file_string += 'bg.inputs[0].default_value[:3] = (1.0, 1.0, 1.0)\n'
-        self.file_string += 'bg.inputs[1].default_value = 1.0\n'
         self.file_string += 'bpy.data.scenes["Scene"].render.filepath = "%s" + ".png"\n' % self.filename
-        self.file_string += 'bpy.context.scene.render.use_freestyle = True\n'
-        self.file_string += 'bpy.context.scene.cycles.max_bounces = 32\n'
-        self.file_string += 'bpy.context.scene.cycles.min_bounces = 3\n'
-        self.file_string += 'bpy.context.scene.cycles.glossy_bounces = 16\n'
-        self.file_string += 'bpy.context.scene.cycles.transmission_bounces = 32\n'
-        self.file_string += 'bpy.context.scene.cycles.volume_bounces = 4\n'
-        self.file_string += 'bpy.context.scene.cycles.transparent_max_bounces = 32\n'
-        self.file_string += 'bpy.context.scene.cycles.transparent_min_bounces = 8\n'
-        self.file_string += 'bpy.data.scenes["Scene"].cycles.film_transparent = True\n'
-        self.file_string += 'bpy.context.scene.cycles.filter_glossy = 0.05\n'
         self.file_string += 'bpy.ops.wm.save_as_mainfile(filepath="%s.blend")\n' % self.filename
+        self.file_string += 'area = next(area for area in bpy.context.screen.areas if area.type == \'VIEW_3D\')\n'
+        self.file_string += 'area.spaces[0].region_3d.view_perspective = \'CAMERA\'\n'
         self.file_string += 'bpy.ops.render.opengl( write_still=True )\n'
         self.file_string += 'modelview_matrix = camera.matrix_world.inverted()\n'
         self.file_string += 'projection_matrix = camera.calc_matrix_camera(\n'
@@ -524,6 +513,30 @@ class pyb(object):
         self.file_string += 'import os\n'
         self.file_string += 'proj_matrix = "[[%15.10e, %15.10e, %15.10e, %15.10e],[%15.10e, %15.10e, %15.10e, %15.10e],[%15.10e, %15.10e, %15.10e, %15.10e]]" % (P[0][0], P[0][1], P[0][2], P[0][3], P[1][0], P[1][1], P[1][2], P[1][3], P[2][0], P[2][1], P[2][2], P[2][3])\n'
         self.file_string += 'os.system("convert %s.png -set proj_matrix \'%%s\' %s.png" %% proj_matrix)\n' % (self.filename, self.filename)
+        self.file_string += 'bpy.ops.wm.quit_blender()\n'
+
+        if sys.platform == "darwin":
+            blender_path = '/Applications/blender.app/Contents/MacOS/blender'
+        else:
+            blender_path = 'blender'
+        with open(self.filename + '.py', 'w') as f:
+            f.write(self.file_string)
+            cmd = "{bpath} --python {fname}.py".format(bpath=blender_path, fname=self.filename)
+            #print cmd
+            #print os.popen('cat %s' % self.filename + '.py').read()
+        render = subprocess.Popen(cmd, shell=True)
+        block = True
+        if block:
+            render.communicate()
+        if filename is not None and block:
+            shutil.copy(self.filename + ".png", filename)
+            proj_matrix = os.popen("identify -verbose %s | grep proj_matrix" % filename).read()
+            exec(proj_matrix.replace(" ", "").replace(":", "="))
+            self.proj_matrix = proj_matrix
+            self.filename = filename.replace('.png.png', '.png')
+        self.has_run = True
+        self.show()
+        self.has_run = False
         self.old_file_string = self.file_string
 
     def render(self, camera_location=(500, 500, 300), c=(0., 0., 0.),
