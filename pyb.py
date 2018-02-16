@@ -460,6 +460,70 @@ class pyb(object):
     def look_at(self, target=None):
         self.file_string += 'camera_track.target = (bpy.data.objects["%s"])\n' % target
 
+    def peek(self, camera_location=(500, 500, 300), c=(0., 0., 0.),
+             l=(250., 250., 250.), fit=True, **kwargs):
+        """Render an opengl example of the 3d scene.
+
+        :param tuple camera_location: location of the camera.
+        :param tuple c: scene center location
+        :param tuple l: scene etents emanating from center
+        :param bool fit: whether to fit the scene or not
+        """
+        res = [640, 480]
+        samples = 10
+        resw = res[0]
+        resh = res[1]
+        self.file_string += 'bpy.context.scene.objects.active.select = False\n'
+        self.file_string += 'bpy.ops.object.visual_transform_apply()\n'
+        self.file_string += 'bpy.data.scenes["Scene"].render.engine = "CYCLES"\n'
+        self.file_string += 'render = bpy.data.scenes["Scene"].render\n'
+        self.file_string += 'world = bpy.data.worlds["World"]\n'
+        self.file_string += 'world.use_nodes = True\n'
+        self.file_string += 'empty = bpy.data.objects.new("Empty", None)\n'
+        self.file_string += 'bpy.context.scene.objects.link(empty)\n'
+        self.file_string += 'empty.empty_draw_size = 1\n'
+        self.file_string += 'empty.empty_draw_type = "CUBE"\n'
+        self.file_string += 'bpy.data.objects["Empty"].location = (%15.10e, %15.10e, %15.10e)\n' % (c[0], c[1], c[2])
+        self.file_string += 'bpy.data.objects["Empty"].scale = (%15.10e, %15.10e, %15.10e)\n' % (l[0]/2., l[1]/2., l[2]/2.)
+        self.file_string += 'empty = bpy.data.objects["Empty"]\n'
+        self.file_string += 'camera = bpy.data.objects["Camera"]\n'
+        self.file_string += 'camera.location = (%6.4f, %6.4f, %6.4f)\n' % \
+            (camera_location[0], camera_location[1], camera_location[2])
+        self.file_string += 'bpy.data.cameras[camera.name].clip_end = 10000.0\n'
+        self.file_string += 'bpy.data.cameras[camera.name].clip_start = 0.0\n'
+        self.file_string += 'camera_track = camera.constraints.new("TRACK_TO")\n'
+        self.file_string += 'camera_track.track_axis = "TRACK_NEGATIVE_Z"\n'
+        self.file_string += 'camera_track.up_axis = "UP_Y"\n'
+        self.look_at(target="Empty")
+        self.file_string += '# changing these values does affect the render.\n'
+        self.file_string += 'bg = world.node_tree.nodes["Background"]\n'
+        self.file_string += 'bg.inputs[0].default_value[:3] = (1.0, 1.0, 1.0)\n'
+        self.file_string += 'bg.inputs[1].default_value = 1.0\n'
+        self.file_string += 'bpy.data.scenes["Scene"].render.filepath = "%s" + ".png"\n' % self.filename
+        self.file_string += 'bpy.context.scene.render.use_freestyle = True\n'
+        self.file_string += 'bpy.context.scene.cycles.max_bounces = 32\n'
+        self.file_string += 'bpy.context.scene.cycles.min_bounces = 3\n'
+        self.file_string += 'bpy.context.scene.cycles.glossy_bounces = 16\n'
+        self.file_string += 'bpy.context.scene.cycles.transmission_bounces = 32\n'
+        self.file_string += 'bpy.context.scene.cycles.volume_bounces = 4\n'
+        self.file_string += 'bpy.context.scene.cycles.transparent_max_bounces = 32\n'
+        self.file_string += 'bpy.context.scene.cycles.transparent_min_bounces = 8\n'
+        self.file_string += 'bpy.data.scenes["Scene"].cycles.film_transparent = True\n'
+        self.file_string += 'bpy.context.scene.cycles.filter_glossy = 0.05\n'
+        self.file_string += 'bpy.ops.wm.save_as_mainfile(filepath="%s.blend")\n' % self.filename
+        self.file_string += 'bpy.ops.render.opengl( write_still=True )\n'
+        self.file_string += 'modelview_matrix = camera.matrix_world.inverted()\n'
+        self.file_string += 'projection_matrix = camera.calc_matrix_camera(\n'
+        self.file_string += '        render.resolution_x / 2.0,\n'
+        self.file_string += '        render.resolution_y / 2.0,\n'
+        self.file_string += '        render.pixel_aspect_x,\n'
+        self.file_string += '        render.pixel_aspect_y,\n'
+        self.file_string += '        )\n'
+        self.file_string += 'P, K, RT = get_3x4_P_matrix_from_blender(camera)\n'
+        self.file_string += 'import os\n'
+        self.file_string += 'proj_matrix = "[[%15.10e, %15.10e, %15.10e, %15.10e],[%15.10e, %15.10e, %15.10e, %15.10e],[%15.10e, %15.10e, %15.10e, %15.10e]]" % (P[0][0], P[0][1], P[0][2], P[0][3], P[1][0], P[1][1], P[1][2], P[1][3], P[2][0], P[2][1], P[2][2], P[2][3])\n'
+        self.file_string += 'os.system("convert %s.png -set proj_matrix \'%%s\' %s.png" %% proj_matrix)\n' % (self.filename, self.filename)
+
     def render(self, camera_location=(500, 500, 300), c=(0., 0., 0.),
                l=(250., 250., 250.), render=True, fit=True, samples=20,
                res=[1920, 1080], draft=False, **kwargs):
