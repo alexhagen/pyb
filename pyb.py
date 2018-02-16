@@ -473,6 +473,7 @@ class pyb(object):
         samples = 10
         resw = res[0]
         resh = res[1]
+        self.old_file_string = self.file_string
         self.file_string += 'bpy.context.scene.objects.active.select = False\n'
         self.file_string += 'bpy.ops.object.visual_transform_apply()\n'
         self.file_string += 'bpy.data.scenes["Scene"].render.engine = "CYCLES"\n'
@@ -523,6 +524,7 @@ class pyb(object):
         self.file_string += 'import os\n'
         self.file_string += 'proj_matrix = "[[%15.10e, %15.10e, %15.10e, %15.10e],[%15.10e, %15.10e, %15.10e, %15.10e],[%15.10e, %15.10e, %15.10e, %15.10e]]" % (P[0][0], P[0][1], P[0][2], P[0][3], P[1][0], P[1][1], P[1][2], P[1][3], P[2][0], P[2][1], P[2][2], P[2][3])\n'
         self.file_string += 'os.system("convert %s.png -set proj_matrix \'%%s\' %s.png" %% proj_matrix)\n' % (self.filename, self.filename)
+        self.old_file_string = self.file_string
 
     def render(self, camera_location=(500, 500, 300), c=(0., 0., 0.),
                l=(250., 250., 250.), render=True, fit=True, samples=20,
