@@ -14,6 +14,11 @@ from psgv import psgv
 cutawayid = psgv.psgv('__cutaway_id__')
 cutawayid.val = 1
 
+top_layer = [False] * 20
+top_layer[0] = True
+n_layer = [False] * 20
+n_layer[1] = True
+
 class pyb(object):
     """ An object to save commands for blender 3d plotting and render
 
@@ -29,6 +34,7 @@ class pyb(object):
         self.has_run = False
         self.proj_matrix = None
         self._draft = False
+        self.path = os.getcwd()
         self.scene_setup()
 
     def scene_setup(self):
@@ -87,6 +93,10 @@ class pyb(object):
             l=None, name="rpp", color=None, alpha=1.0, verts=None,
                     emis=False):
         self.name = name
+        if (x1 is not None) and (x2 is not None) and (y1 is not None) and \
+            (y2 is not None) and (z1 is not None) and (z2 is not None):
+            c = [np.mean([x1, x2]), np.mean([y1, y2]), np.mean([z1, z2])]
+            l = [x2 - x1, y2 - y1, z2 - z1]
         if c is not None and l is not None:
             self.file_string += 'bpy.ops.mesh.primitive_cube_add()\n'
             self.file_string += 'bpy.context.object.name = "%s"\n' % (name)
@@ -383,6 +393,50 @@ class pyb(object):
         self.file_string += 'trans.diffuse_color = (%6.4f, %6.4f, %6.4f)\n' % (rgb[0], rgb[1], rgb[2])
         self.file_string += '%s = trans\n' % name
 
+    def line3d(self, xs, ys, zs, name='line', bevel=1.0, color=None, alpha=1.0,
+               emis=False, layer='render'):
+        self.file_string += "render_layers = bpy.context.scene.render.layers\n"
+        self.file_string += "print([rl.name for rl in render_layers])\n"
+        self.file_string += "verts = [\n"
+        for i, (x, y, z) in enumerate(zip(xs, ys, zs)):
+            self.file_string += \
+                "         ({x}, {y}, {z}),\n".format(x=x, y=y, z=z)
+        self.file_string += "         ]\n"
+        self.file_string += "edges = [\n"
+        pts = range(len(xs))
+        for i, j in zip(pts[:-1], pts[1:]):
+            self.file_string += "         [{i}, {j}],\n".format(i=i, j=j)
+        self.file_string += "         ]\n"
+        self.file_string += "{name}_mesh = bpy.data.meshes.new(\"{name}_Data\")\n".format(name=name)
+        self.file_string += "{name}_mesh.from_pydata(verts, edges, [])\n".format(name=name)
+        self.file_string += "{name}_mesh.update()\n".format(name=name)
+        self.file_string += "{name}_object = bpy.data.objects.new(\"{name}\", {name}_mesh)\n".format(name=name)
+        self.file_string += "{name}_object.data = {name}_mesh\n".format(name=name)
+        self.file_string += "scene = bpy.context.scene\n".format(name=name)
+        self.file_string += "scene.objects.link({name}_object)\n".format(name=name)
+        self.file_string += "{name}_object.select = True\n".format(name=name)
+        self.file_string += "bpy.context.scene.objects.active = {name}_object\n".format(name=name)
+        self.file_string += "bpy.ops.object.convert(target=\"CURVE\")\n".format(name=name)
+        self.file_string += "{name}_object.data.fill_mode = \"FULL\"\n".format(name=name)
+        self.file_string += "{name}_object.data.bevel_depth = {bevel}\n".format(name=name, bevel=bevel)
+        if layer == 'render':
+            self.file_string += "{name}_object.layers[0]= True\n".format(name=name)
+            self.file_string += "for i in range(20):\n"
+            self.file_string += "\t{name}_object.layers[i] = (i == 0)\n".format(name=name)
+        elif layer == 'trans':
+            self.file_string += "{name}_object.layers[1]= True\n".format(name=name)
+            self.file_string += "for i in range(20):\n"
+            self.file_string += "\t{name}_object.layers[i] = (i == 1)\n".format(name=name)
+        self.file_string += "{name}_object = bpy.context.object\n".format(name=name)
+        name = name + '_object'
+        if color is not None and not emis:
+            self.flat(name="%s_color" % name, color=color, alpha=alpha)
+            self.set_matl(obj=name, matl="%s_color" % name)
+        elif color is not None and emis:
+            self.emis(name="%s_color" % name, color=color)
+            self.set_matl(obj=name, matl="%s_color" % name)
+
+
     def image(self, name="Image", fname=None, alpha=1.0, volume=False,
               color="#ffffff"):
         rgb = Color(color).rgb
@@ -541,7 +595,7 @@ class pyb(object):
 
     def render(self, camera_location=(500, 500, 300), c=(0., 0., 0.),
                l=(250., 250., 250.), render=True, fit=True, samples=20,
-               res=[1920, 1080], draft=False, **kwargs):
+               res=[1920, 1080], draft=False, freestyle=True, **kwargs):
         if self._draft or draft:
             res = [640, 480]
             samples = 10
@@ -576,7 +630,10 @@ class pyb(object):
         self.file_string += 'bg.inputs[0].default_value[:3] = (1.0, 1.0, 1.0)\n'
         self.file_string += 'bg.inputs[1].default_value = 1.0\n'
         self.file_string += 'bpy.data.scenes["Scene"].render.filepath = "%s" + ".png"\n' % self.filename
-        self.file_string += 'bpy.context.scene.render.use_freestyle = True\n'
+        self.file_string += 'bpy.context.scene.render.use_freestyle = %s\n' % freestyle
+        self.file_string += 'bpy.context.scene.render.layers[0].use_freestyle = True\n'
+        self.file_string += 'bpy.context.scene.render.layers[1].use = True\n'
+        #self.file_string += 'bpy.context.scene.render.layers[1].use_freestyle = False\n'
         self.file_string += 'bpy.context.scene.cycles.samples = %d\n' % samples
         self.file_string += 'bpy.context.scene.cycles.max_bounces = 32\n'
         self.file_string += 'bpy.context.scene.cycles.min_bounces = 3\n'
@@ -613,7 +670,7 @@ class pyb(object):
         """
         self.render(**kwargs)
         if sys.platform == "darwin":
-            blender_path = '/Applications/blender.app/Contents/MacOS/blender'
+            blender_path = '/Applications/Blender/blender.app/Contents/MacOS/blender' # '/Applications/blender.app/Contents/MacOS/blender'
         else:
             blender_path = 'blender'
         with open(self.filename + '.py', 'w') as f:
@@ -635,12 +692,18 @@ class pyb(object):
             self.proj_matrix = proj_matrix
         self.has_run = True
 
+
+
     def show(self):
         """ Opens the image if it has been rendered
         """
         if self.has_run:
             iid = random.randint(0, 1E9)
-            html_str = '<img src="/files/mcnp/active/{fname}.png?{iid}" \/>'.format(fname=self.filename, iid=iid)
+            path = os.path.join(self.path, self.filename)
+            homepath = os.path.expanduser('~')
+            path = os.path.relpath(path, homepath)
+            print path
+            html_str = '<img src="/files/{fname}.png?{iid}"\/>'.format(fname=path, iid=iid)
             return display(HTML(html_str))
             cmd = "eog %s.png" % self.filename
             subprocess.Popen(cmd, shell=True)
