@@ -1,5 +1,6 @@
 # the converted readme
 README.rst
+.DS_Store
 
 # compiled tests
 brender_*.py

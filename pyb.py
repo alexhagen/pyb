@@ -53,6 +53,9 @@ class pyb(object):
         self.file_string += 'scene = bpy.context.scene\n'
         self.file_string += '# First, delete the default cube\n'
         self.file_string += 'bpy.ops.object.delete()\n'
+        self.file_string += 'fg = bpy.data.groups.new("freestyle_group")\n'
+        self.file_string += 'tg = bpy.data.groups.new("transparent_group")\n'
+        #self.file_string += 'bpy.ops.scene.render_layer_add()\n'
 
     def sun(self, strength=1.0):
         """ creates a blender sun lamp
@@ -76,7 +79,7 @@ class pyb(object):
         return self
 
     def point(self, location=(0., 0., 0.), strength=1.0, name="Point",
-           color='#555555', alpha=1.0):
+           color='#555555', alpha=1.0, layer='render'):
         self.file_string += 'lamp_data = bpy.data.lamps.new(name=name, type="POINT")\n'
         self.file_string += 'lamp_data.use_nodes = True\n'
         self.file_string += 'lamp_data.node_tree.nodes["Emission"].inputs[1].default_value = %15.10e\n' % strength
@@ -88,10 +91,16 @@ class pyb(object):
         self.file_string += 'bpy.ops.object.transform_apply(location=True)\n'
         self.file_string += 'lamp_object.select = True\n'
         self.file_string += 'bpy.context.scene.objects.active = lamp_object\n'
+        name = 'lamp_object'
+        if layer == 'render':
+            self.file_string += 'fg.objects.link({name})\n'.format(name=name)
+        elif layer == 'trans':
+            self.file_string += 'tg.objects.link({name})\n'.format(name=name)
+        self.file_string += "{name} = bpy.context.object\n".format(name=name)
 
     def rpp(self, x1=None, x2=None, y1=None, y2=None, z1=None, z2=None, c=None,
             l=None, name="rpp", color=None, alpha=1.0, verts=None,
-                    emis=False):
+                    emis=False, layer='render'):
         self.name = name
         if (x1 is not None) and (x2 is not None) and (y1 is not None) and \
             (y2 is not None) and (z1 is not None) and (z2 is not None):
@@ -113,6 +122,11 @@ class pyb(object):
             self.file_string += 'faces = [(0,1,3,2), (4,5,7,6), (0,1,5,4), (2,3,7,6), (1,3,7,5), (0,2,6,4)]\n'
             self.file_string += 'mesh.from_pydata(verts, [], faces)\n'
             self.file_string += 'mesh.update(calc_edges=True)\n'
+        if layer == 'render':
+            self.file_string += 'fg.objects.link({name})\n'.format(name=name)
+        elif layer == 'trans':
+            self.file_string += 'tg.objects.link({name})\n'.format(name=name)
+        self.file_string += "{name} = bpy.context.object\n".format(name=name)
         if color is not None and not emis:
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
             self.set_matl(obj=name, matl="%s_color" % name)
@@ -122,7 +136,7 @@ class pyb(object):
 
     def plane(self, x1=None, x2=None, y1=None, y2=None, z1=None, z2=None,
               c=None, l=None, name="plane", color=None, alpha=1.0, verts=None,
-              emis=False, image=None):
+              emis=False, image=None, layer='render'):
         self.name = name
         if c is None and l is None:
             c = [(x1 + x2)/2., (y1 + y2)/2., (z1 + z2)/2.]
@@ -135,6 +149,11 @@ class pyb(object):
             #self.file_string += 'bpy.context.object.rotation = (%15.10e, %15.10e, %15.10e)\n' % (r[0]/2., r[1]/2., r[2]/2.)
             self.file_string += 'bpy.ops.object.transform_apply(location=True, scale=True)\n'
             self.file_string += '%s = bpy.context.object\n' % (name)
+            if layer == 'render':
+                self.file_string += 'fg.objects.link({name})\n'.format(name=name)
+            elif layer == 'trans':
+                self.file_string += 'tg.objects.link({name})\n'.format(name=name)
+            self.file_string += "{name} = bpy.context.object\n".format(name=name)
         if color is not None and not emis:
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
             self.set_matl(obj=name, matl="%s_color" % name)
@@ -146,7 +165,7 @@ class pyb(object):
             self.set_matl(obj=name, matl="%s_color" % name)
 
     def sph(self, c=None, r=None, name="sph", color=None, alpha=1.0,
-            emis=False):
+            emis=False, layer='render'):
         self.name = name
         self.file_string += 'bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=4)\n'
         self.file_string += 'bpy.context.object.name = "%s"\n' % (name)
@@ -154,6 +173,11 @@ class pyb(object):
         self.file_string += 'bpy.context.object.scale = (%15.10e, %15.10e, %15.10e)\n' % (r, r, r)
         self.file_string += 'bpy.ops.object.transform_apply(location=True, scale=True)\n'
         self.file_string += '%s = bpy.context.object\n' % (name)
+        if layer == 'render':
+            self.file_string += 'fg.objects.link({name})\n'.format(name=name)
+        elif layer == 'trans':
+            self.file_string += 'tg.objects.link({name})\n'.format(name=name)
+        self.file_string += "{name} = bpy.context.object\n".format(name=name)
         if color is not None and not emis:
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
             self.set_matl(obj=name, matl="%s_color" % name)
@@ -162,7 +186,7 @@ class pyb(object):
             self.set_matl(obj=name, matl="%s_color" % name)
 
     def gq(self, A=0.0, B=0.0, C=0.0, D=0.0, E=0.0, F=0.0, G=0.0, H=0.0, J=0.0,
-           K=0.0, name="gq", color=None, alpha=1.0, emis=False):
+           K=0.0, name="gq", color=None, alpha=1.0, emis=False, layer='render'):
         r""" ``gq`` adds a generalized quadratic surface using the mesh.
 
         ``gq`` adds a generalized quadratic surface using the mesh operators.
@@ -197,6 +221,11 @@ class pyb(object):
         self.file_string += 'obj.select = True\n'
         self.file_string += 'scene.objects.active = obj\n'
         self.file_string += '%s = bpy.context.object\n' % (name)
+        if layer == 'render':
+            self.file_string += 'fg.objects.link({name})\n'.format(name=name)
+        elif layer == 'trans':
+            self.file_string += 'tg.objects.link({name})\n'.format(name=name)
+        self.file_string += "{name} = bpy.context.object\n".format(name=name)
         if color is not None and not emis:
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
             self.set_matl(obj=name, matl="%s_color" % name)
@@ -205,7 +234,7 @@ class pyb(object):
             self.set_matl(obj=name, matl="%s_color" % name)
 
     def rcc(self, c=None, r=None, h=None, name="rcc", color=None, direction='z',
-            alpha=1.0, emis=False):
+            alpha=1.0, emis=False, layer='render'):
         """ makes a cylinder with center point ``c``, radius ``r``, and height ``h``
 
             .. todo:: Make sure rotation works here
@@ -242,6 +271,11 @@ class pyb(object):
         self.file_string += 'bpy.context.object.scale = (%15.10e, %15.10e, %15.10e)\n' % (axis[0], axis[1], axis[2])
         self.file_string += 'bpy.ops.object.transform_apply(location=True, scale=True)\n'
         self.file_string += '%s = bpy.context.object\n' % (name)
+        if layer == 'render':
+            self.file_string += 'fg.objects.link({name})\n'.format(name=name)
+        elif layer == 'trans':
+            self.file_string += 'tg.objects.link({name})\n'.format(name=name)
+        self.file_string += "{name} = bpy.context.object\n".format(name=name)
         if color is not None and not emis:
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
             self.set_matl(obj=name, matl="%s_color" % name)
@@ -250,7 +284,7 @@ class pyb(object):
             self.set_matl(obj=name, matl="%s_color" % name)
 
     def cone(self, c=(0., 0., 0.), r1=None, r2=None, h=None, name="cone",
-             color=None, direction='z', alpha=1.0, emis=False):
+             color=None, direction='z', alpha=1.0, emis=False, layer='render'):
         """ ``cone`` makes a truncated cone with height ``h`` and radii ``r1``
             and ``r2``.
 
@@ -307,6 +341,11 @@ class pyb(object):
             (c[0], c[1], c[2])
         self.file_string += 'bpy.ops.object.transform_apply(location=True)\n'
         self.file_string += '%s = bpy.context.object\n' % (name)
+        if layer == 'render':
+            self.file_string += 'fg.objects.link({name})\n'.format(name=name)
+        elif layer == 'trans':
+            self.file_string += 'tg.objects.link({name})\n'.format(name=name)
+        self.file_string += "{name} = bpy.context.object\n".format(name=name)
         if color is not None and not emis:
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
             self.set_matl(obj=name, matl="%s_color" % name)
@@ -419,14 +458,18 @@ class pyb(object):
         self.file_string += "bpy.ops.object.convert(target=\"CURVE\")\n".format(name=name)
         self.file_string += "{name}_object.data.fill_mode = \"FULL\"\n".format(name=name)
         self.file_string += "{name}_object.data.bevel_depth = {bevel}\n".format(name=name, bevel=bevel)
+        #if layer == 'render':
+        #    self.file_string += "{name}_object.layers[0]= True\n".format(name=name)
+        #    self.file_string += "for i in range(2):\n"
+        #    self.file_string += "\t{name}_object.layers[i] = (i == 0)\n".format(name=name)
+        #elif layer == 'trans':
+        #    self.file_string += "{name}_object.layers[1] = True\n".format(name=name)
+        #    self.file_string += "for i in range(2):\n"
+        #    self.file_string += "\t{name}_object.layers[i] = (i == 1)\n".format(name=name)
         if layer == 'render':
-            self.file_string += "{name}_object.layers[0]= True\n".format(name=name)
-            self.file_string += "for i in range(20):\n"
-            self.file_string += "\t{name}_object.layers[i] = (i == 0)\n".format(name=name)
+            self.file_string += 'fg.objects.link({name}_object)\n'.format(name=name)
         elif layer == 'trans':
-            self.file_string += "{name}_object.layers[1]= True\n".format(name=name)
-            self.file_string += "for i in range(20):\n"
-            self.file_string += "\t{name}_object.layers[i] = (i == 1)\n".format(name=name)
+            self.file_string += 'tg.objects.link({name}_object)\n'.format(name=name)
         self.file_string += "{name}_object = bpy.context.object\n".format(name=name)
         name = name + '_object'
         if color is not None and not emis:
@@ -438,7 +481,7 @@ class pyb(object):
 
 
     def image(self, name="Image", fname=None, alpha=1.0, volume=False,
-              color="#ffffff"):
+              color="#ffffff", layer='render'):
         rgb = Color(color).rgb
         self.file_string += 'source = bpy.data.materials.new("%s")\n' % name
         self.file_string += 'source.use_nodes = True\n'
@@ -631,9 +674,30 @@ class pyb(object):
         self.file_string += 'bg.inputs[1].default_value = 1.0\n'
         self.file_string += 'bpy.data.scenes["Scene"].render.filepath = "%s" + ".png"\n' % self.filename
         self.file_string += 'bpy.context.scene.render.use_freestyle = %s\n' % freestyle
-        self.file_string += 'bpy.context.scene.render.layers[0].use_freestyle = True\n'
-        self.file_string += 'bpy.context.scene.render.layers[1].use = True\n'
-        #self.file_string += 'bpy.context.scene.render.layers[1].use_freestyle = False\n'
+        self.file_string += 'bpy.data.scenes["Scene"].layers[0] = True\n'
+        self.file_string += 'print(bpy.data.scenes["Scene"].layers)\n'
+        self.file_string += 'print(bpy.data.scenes["Scene"].layers[0])\n'
+        self.file_string += 'print(dir(bpy.data.scenes["Scene"].render))\n'
+        #self.file_string += 'sceneR = bpy.context.scene\n'
+        #self.file_string += 'freestyle = sceneR.render.layers.active.freestyle_settings\n'
+        self.file_string += 'linestyle = bpy.context.scene.render.layers[0].freestyle_settings.linesets[0]\n'
+        #self.file_string += 'sceneR.render.use_freestyle = True\n'
+        #self.file_string += 'sceneR.svg_export.use_svg_export = True\n'
+        #self.file_string += 'freestyle.use_smoothness = True\n'
+        #self.file_string += 'freestyle.use_culling = True\n'
+        #self.file_string += 'linestyle.select_by_visibility = True\n'
+        #self.file_string += 'linestyle.select_by_edge_types = True\n'
+        #self.file_string += 'linestyle.visibility = "RANGE"\n'
+        #self.file_string += 'linestyle.select_silhouette = True\n'
+        self.file_string += 'print(dir(linestyle))\n'
+        self.file_string += 'linestyle.select_by_group = True\n'
+        self.file_string += 'linestyle.group = fg\n'
+        #self.file_string += 'linestyle.group_negation = tg\n'
+        #self.file_string += 'bpy.data.scenes["Scene"].render.layers["RenderLayer"].layers[0].use_freestyle = True\n'
+        self.file_string += 'print(bpy.context.scene.render.layers)\n'
+        #self.file_string += 'raise ValueError("A very specific bad thing happened.")\n'
+        self.file_string += 'bpy.data.scenes["Scene"].layers[1] = True\n'
+        #self.file_string += 'bpy.data.scenes["Scene"].render.layers["RenderLayer"].layers[1].use_freestyle = False\n'
         self.file_string += 'bpy.context.scene.cycles.samples = %d\n' % samples
         self.file_string += 'bpy.context.scene.cycles.max_bounces = 32\n'
         self.file_string += 'bpy.context.scene.cycles.min_bounces = 3\n'
