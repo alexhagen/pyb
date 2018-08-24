@@ -100,7 +100,7 @@ class pyb(object):
 
     def rpp(self, x1=None, x2=None, y1=None, y2=None, z1=None, z2=None, c=None,
             l=None, name="rpp", color=None, alpha=1.0, verts=None,
-                    emis=False, layer='render'):
+                    emis=False, layer='render', **kwargs):
         self.name = name
         if (x1 is not None) and (x2 is not None) and (y1 is not None) and \
             (y2 is not None) and (z1 is not None) and (z2 is not None):
@@ -131,12 +131,12 @@ class pyb(object):
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
             self.set_matl(obj=name, matl="%s_color" % name)
         elif color is not None and emis:
-            self.emis(name="%s_color" % name, alpha=alpha, color=color)
+            self.emis(name="%s_color" % name, alpha=alpha, color=color, **kwargs)
             self.set_matl(obj=name, matl="%s_color" % name)
 
     def plane(self, x1=None, x2=None, y1=None, y2=None, z1=None, z2=None,
               c=None, l=None, name="plane", color=None, alpha=1.0, verts=None,
-              emis=False, image=None, layer='render'):
+              emis=False, image=None, layer='render', **kwargs):
         self.name = name
         if c is None and l is None:
             c = [(x1 + x2)/2., (y1 + y2)/2., (z1 + z2)/2.]
@@ -158,14 +158,14 @@ class pyb(object):
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
             self.set_matl(obj=name, matl="%s_color" % name)
         elif color is not None and emis:
-            self.emis(name="%s_color" % name, alpha=alpha, color=color)
+            self.emis(name="%s_color" % name, alpha=alpha, color=color, **kwargs)
             self.set_matl(obj=name, matl="%s_color" % name)
         elif image is not None:
             self.image(name="%s_color" % name, fname=image, alpha=alpha)
             self.set_matl(obj=name, matl="%s_color" % name)
 
     def sph(self, c=None, r=None, name="sph", color=None, alpha=1.0,
-            emis=False, layer='render'):
+            emis=False, layer='render', **kwargs):
         self.name = name
         self.file_string += 'bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=4)\n'
         self.file_string += 'bpy.context.object.name = "%s"\n' % (name)
@@ -182,11 +182,12 @@ class pyb(object):
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
             self.set_matl(obj=name, matl="%s_color" % name)
         elif color is not None and emis:
-            self.emis(name="%s_color" % name, alpha=alpha, color=color)
+            self.emis(name="%s_color" % name, alpha=alpha, color=color, **kwargs)
             self.set_matl(obj=name, matl="%s_color" % name)
 
     def gq(self, A=0.0, B=0.0, C=0.0, D=0.0, E=0.0, F=0.0, G=0.0, H=0.0, J=0.0,
-           K=0.0, name="gq", color=None, alpha=1.0, emis=False, layer='render'):
+           K=0.0, name="gq", color=None, alpha=1.0, emis=False, layer='render',
+           **kwargs):
         r""" ``gq`` adds a generalized quadratic surface using the mesh.
 
         ``gq`` adds a generalized quadratic surface using the mesh operators.
@@ -230,11 +231,11 @@ class pyb(object):
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
             self.set_matl(obj=name, matl="%s_color" % name)
         elif color is not None and emis:
-            self.emis(name="%s_color" % name, color=color)
+            self.emis(name="%s_color" % name, color=color, **kwargs)
             self.set_matl(obj=name, matl="%s_color" % name)
 
     def rcc(self, c=None, r=None, h=None, name="rcc", color=None, direction='z',
-            alpha=1.0, emis=False, layer='render'):
+            alpha=1.0, emis=False, layer='render', **kwargs):
         """ makes a cylinder with center point ``c``, radius ``r``, and height ``h``
 
             .. todo:: Make sure rotation works here
@@ -280,11 +281,12 @@ class pyb(object):
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
             self.set_matl(obj=name, matl="%s_color" % name)
         elif color is not None and emis:
-            self.emis(name="%s_color" % name, color=color)
+            self.emis(name="%s_color" % name, color=color, **kwargs)
             self.set_matl(obj=name, matl="%s_color" % name)
 
     def cone(self, c=(0., 0., 0.), r1=None, r2=None, h=None, name="cone",
-             color=None, direction='z', alpha=1.0, emis=False, layer='render'):
+             color=None, direction='z', alpha=1.0, emis=False, layer='render',
+             **kwargs):
         """ ``cone`` makes a truncated cone with height ``h`` and radii ``r1``
             and ``r2``.
 
@@ -350,7 +352,7 @@ class pyb(object):
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
             self.set_matl(obj=name, matl="%s_color" % name)
         elif color is not None and emis:
-            self.emis(name="%s_color" % name, color=color)
+            self.emis(name="%s_color" % name, color=color, **kwargs)
             self.set_matl(obj=name, matl="%s_color" % name)
 
     def subtract(self, left, right):
@@ -404,7 +406,8 @@ class pyb(object):
             self.file_string += '    node.update()\n'
         #self.file_string += '%s = flat\n' % name
 
-    def emis(self, name="Source", color="#555555", alpha=1.0, volume=False):
+    def emis(self, name="Source", color="#555555", alpha=1.0, volume=False,
+             emittance=5.0, **kwargs):
         rgb = Color(color).rgb
         self.file_string += 'source = bpy.data.materials.new("%s")\n' % name
         self.file_string += 'source.use_nodes = True\n'
@@ -414,7 +417,7 @@ class pyb(object):
         self.file_string += 'links = source.node_tree.links\n'
         self.file_string += '%s_e = nodes.new(type="ShaderNodeEmission")\n' % name
         self.file_string += '%s_e.inputs[0].default_value = (%6.4f, %6.4f, %6.4f, %6.4f)\n' % (name, rgb[0], rgb[1], rgb[2], alpha)
-        self.file_string += '%s_e.inputs[1].default_value = 5.0\n' % name
+        self.file_string += '%s_e.inputs[1].default_value = %6.4f\n' % (name, emittance)
         self.file_string += '%s_glass = nodes.new("ShaderNodeBsdfTransparent")\n' % name
         self.file_string += '%s_mix = nodes.new("ShaderNodeMixShader")\n' % name
         self.file_string += 'links.new(%s_e.outputs[0], %s_mix.inputs[1])\n' % (name, name)
@@ -433,7 +436,7 @@ class pyb(object):
         self.file_string += '%s = trans\n' % name
 
     def line3d(self, xs, ys, zs, name='line', bevel=1.0, color=None, alpha=1.0,
-               emis=False, layer='render'):
+               emis=False, layer='render', **kwargs):
         self.file_string += "render_layers = bpy.context.scene.render.layers\n"
         self.file_string += "print([rl.name for rl in render_layers])\n"
         self.file_string += "verts = [\n"
@@ -476,7 +479,7 @@ class pyb(object):
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
             self.set_matl(obj=name, matl="%s_color" % name)
         elif color is not None and emis:
-            self.emis(name="%s_color" % name, color=color)
+            self.emis(name="%s_color" % name, color=color, **kwargs)
             self.set_matl(obj=name, matl="%s_color" % name)
 
 
