@@ -647,7 +647,10 @@ class pyb(object):
             samples = 10
         resw = res[0]
         resh = res[1]
-        self.file_string += 'bpy.context.scene.objects.active.select = False\n'
+        self.file_string += 'try:\n'
+        self.file_string += '   bpy.context.scene.objects.active.select = False\n'
+        self.file_string += 'except AttributeError:\n'
+        self.file_string += '   pass\n'
         self.file_string += 'bpy.ops.object.visual_transform_apply()\n'
         self.file_string += 'bpy.data.scenes["Scene"].render.engine = "CYCLES"\n'
         self.file_string += 'render = bpy.data.scenes["Scene"].render\n'
