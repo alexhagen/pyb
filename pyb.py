@@ -80,10 +80,10 @@ class pyb(object):
 
     def point(self, location=(0., 0., 0.), strength=1.0, name="Point",
            color='#555555', alpha=1.0, layer='render'):
-        self.file_string += 'lamp_data = bpy.data.lamps.new(name=name, type="POINT")\n'
+        self.file_string += 'lamp_data = bpy.data.lamps.new(name="%s", type="POINT")\n' % name
         self.file_string += 'lamp_data.use_nodes = True\n'
         self.file_string += 'lamp_data.node_tree.nodes["Emission"].inputs[1].default_value = %15.10e\n' % strength
-        self.file_string += 'lamp_object = bpy.data.objects.new(name=%s, object_data=lamp_data)\n' % name
+        self.file_string += 'lamp_object = bpy.data.objects.new(name="%s", object_data=lamp_data)\n' % name
         self.file_string += 'bpy.context.scene.objects.link(lamp_object)\n'
         self.file_string += 'lamp_object.location = (%15.10e, %15.10e, %15.10e)\n' % (location[0], location[1], location[2])
         rgb = Color(color).rgb
@@ -165,9 +165,9 @@ class pyb(object):
             self.set_matl(obj=name, matl="%s_color" % name)
 
     def sph(self, c=None, r=None, name="sph", color=None, alpha=1.0,
-            emis=False, layer='render', **kwargs):
+            emis=False, layer='render', subd=4, **kwargs):
         self.name = name
-        self.file_string += 'bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=4)\n'
+        self.file_string += 'bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=%d)\n' % (subd)
         self.file_string += 'bpy.context.object.name = "%s"\n' % (name)
         self.file_string += 'bpy.context.object.location = (%15.10e, %15.10e, %15.10e)\n' % (c[0], c[1], c[2])
         self.file_string += 'bpy.context.object.scale = (%15.10e, %15.10e, %15.10e)\n' % (r, r, r)
@@ -355,16 +355,19 @@ class pyb(object):
             self.emis(name="%s_color" % name, color=color, **kwargs)
             self.set_matl(obj=name, matl="%s_color" % name)
 
-    def subtract(self, left, right):
-        self.boolean(left=left, right=right, operation="DIFFERENCE")
+    def subtract(self, left, right, unlink=True):
+        self.boolean(left=left, right=right, operation="DIFFERENCE",
+                     unlink=unlink)
 
-    def union(self, left, right):
-        self.boolean(left=left, right=right, operation="UNION")
+    def union(self, left, right, unlink=True):
+        self.boolean(left=left, right=right, operation="UNION",
+                     unlink=unlink)
 
-    def intersect(self, left, right):
-        self.boolean(left=left, right=right, operation="INTERSECT")
+    def intersect(self, left, right, unlink=True):
+        self.boolean(left=left, right=right, operation="INTERSECT",
+                     unlink=unlink)
 
-    def boolean(self, left, right, operation):
+    def boolean(self, left, right, operation, unlink=True):
         if operation == "DIFFERENCE":
             op = 'less'
         elif operation == "UNION":
@@ -379,7 +382,8 @@ class pyb(object):
         #self.file_string += '%s.double_threshold = 0.1\n' % name
         self.file_string += '%s.solver = "CARVE"\n' % (name)
         self.file_string += 'bpy.ops.object.modifier_apply(apply_as="DATA", modifier="%s")\n' % (left + "_" + operation.lower() + "_" + right)
-        self.file_string += 'bpy.context.scene.objects.unlink(%s)\n' % right
+        if unlink:
+            self.file_string += 'bpy.context.scene.objects.unlink(%s)\n' % right
         self.file_string += 'bpy.context.scene.objects.active = bpy.context.object\n'
         self.file_string += '%s = bpy.context.object\n' % (left + "_" + op + "_" + right)
 
