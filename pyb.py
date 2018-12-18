@@ -11,6 +11,9 @@ from IPython.display import display, HTML
 import random
 from psgv import psgv
 
+
+np.set_printoptions(threshold=np.nan)
+
 cutawayid = psgv.psgv('__cutaway_id__')
 cutawayid.val = 1
 
@@ -163,6 +166,21 @@ class pyb(object):
         elif image is not None:
             self.image(name="%s_color" % name, fname=image, alpha=alpha)
             self.set_matl(obj=name, matl="%s_color" % name)
+
+    def scatter(self, arr, color=None, alpha=1.0):
+        #self.rpp(c=arr[0], l=[0.01, 0.01, 0.01], name='sphere', color=color, alpha=alpha)
+        self.sph(c=arr[0], r=0.01, name='sphere', color=color, alpha=alpha)
+        self.file_string += 'arr = [[%e, %e, %e],\n' % (arr[1, 0], arr[1, 1], arr[1, 2])
+        for row in arr[2:]:
+            self.file_string += '      [%e, %e, %e],\n' % (row[0], row[1], row[2])
+        self.file_string += '      ]\n'
+        self.file_string += 'for row in arr:\n'
+        self.file_string += '    ob = sphere.copy()\n'
+        self.file_string += '    ob.location.x = row[0]\n'
+        self.file_string += '    ob.location.y = row[1]\n'
+        self.file_string += '    ob.location.z = row[2]\n'
+        self.file_string += '    bpy.context.scene.objects.link(ob)\n'
+        self.file_string += 'bpy.context.scene.update()\n'
 
     def sph(self, c=None, r=None, name="sph", color=None, alpha=1.0,
             emis=False, layer='render', subd=4, **kwargs):
@@ -652,9 +670,9 @@ class pyb(object):
         resw = res[0]
         resh = res[1]
         self.file_string += 'try:\n'
-        self.file_string += '   bpy.context.scene.objects.active.select = False\n'
+        self.file_string += '    bpy.context.scene.objects.active.select = False\n'
         self.file_string += 'except AttributeError:\n'
-        self.file_string += '   pass\n'
+        self.file_string += '    pass\n'
         self.file_string += 'bpy.ops.object.visual_transform_apply()\n'
         self.file_string += 'bpy.data.scenes["Scene"].render.engine = "CYCLES"\n'
         self.file_string += 'render = bpy.data.scenes["Scene"].render\n'
