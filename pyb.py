@@ -167,24 +167,31 @@ class pyb(object):
             self.image(name="%s_color" % name, fname=image, alpha=alpha)
             self.set_matl(obj=name, matl="%s_color" % name)
 
-    def scatter(self, arr, color=None, alpha=1.0, layer='render'):
+    def scatter(self, arr, color=None, alpha=1.0, layer='render', r=0.01):
         #self.rpp(c=arr[0], l=[0.01, 0.01, 0.01], name='sphere', color=color, alpha=alpha)
         ri = np.random.randint(1E9)
-        self.sph(c=arr[0], r=0.01, name='sphere%d' % ri, color=color, alpha=alpha, layer=layer)
+        self.file_string += 'bpy.context.scene.cursor_location = (0.0, 0.0, 0.0)\n'
+        self.sph(c=arr[0], r=r, name='sphere%d' % ri, color=color, alpha=alpha, layer=layer)
         self.file_string += 'arr = [[%e, %e, %e],\n' % (arr[1, 0], arr[1, 1], arr[1, 2])
         for row in arr[2:]:
             self.file_string += '      [%e, %e, %e],\n' % (row[0], row[1], row[2])
         self.file_string += '      ]\n'
-        self.file_string += 'for row in arr:\n'
+        self.file_string += 'bpy.context.scene.cursor_location = (0.0, 0.0, 0.0)\n'
+        self.file_string += 'for i, row in enumerate(arr[1:]):\n'
         self.file_string += '    ob = sphere%d.copy()\n' % ri
-        self.file_string += '    ob.location.x = row[0]\n'
-        self.file_string += '    ob.location.y = row[1]\n'
-        self.file_string += '    ob.location.z = row[2]\n'
+        #self.file_string += '    bpy.context.scene.cursor_location = (0.0, 0.0, 0.0)\n'
         self.file_string += '    scene.objects.link(ob)\n'
+        self.file_string += '    ob.location.x = row[0] - arr[0][0]\n'
+        self.file_string += '    ob.location.y = row[1] - arr[0][1]\n'
+        self.file_string += '    ob.location.z = row[2] - arr[0][2]\n'
+        #self.file_string += '    bpy.ops.object.transform_apply(location=True, scale=True)\n'
+        self.file_string += '    bpy.context.scene.update()\n'
+        #self.file_string += '    bpy.context.scene.cursor_location = (0.0, 0.0, 0.0)\n'
         if layer == 'render':
             self.file_string += 'fg.objects.link(ob)\n'
         elif layer == 'trans':
             self.file_string += 'tg.objects.link(ob)\n'
+        self.file_string += 'bpy.context.scene.cursor_location = (0.0, 0.0, 0.0)\n'
         #self.file_string += 'bpy.context.scene.update()\n'
         #self.file_string += "{name} = bpy.context.object\n".format(name=name)
 
