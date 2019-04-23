@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import subprocess
 import tempfile
@@ -807,7 +808,7 @@ class pyb(object):
             path = os.path.join(self.path, self.filename)
             homepath = os.path.expanduser('~')
             path = os.path.relpath(path, homepath)
-            print path
+            print (path)
             html_str = '<img src="/files/{fname}.png?{iid}"\/>'.format(fname=path, iid=iid)
             return display(HTML(html_str))
             cmd = "eog %s.png" % self.filename
