@@ -399,6 +399,21 @@ class pyb(object):
         self.boolean(left=left, right=right, operation="INTERSECT",
                      unlink=unlink)
 
+    def explode(self, name, c, l):
+        if isinstance(l, float):
+            l = (l, l, l)
+        self.file_string += 'scene.objects.active = %s\n' % name
+        self.file_string += 'o = bpy.context.object\n'
+        self.file_string += 'vcos = [ o.matrix_world * v.co for v in o.data.vertices ]\n'
+        self.file_string += 'findCenter = lambda l: ( max(l) + min(l) ) / 2\n'
+        self.file_string += 'x,y,z  = [ [ v[i] for v in vcos ] for i in range(3) ]\n'
+        self.file_string += 'center = [ findCenter(axis) for axis in [x,y,z] ]\n'
+        self.file_string += 'ds = (center[0] - %15.10e, center[1] - %15.10e, center[2] - %15.10e)\n' % (c[0], c[1], c[2])
+        self.file_string += 's = (%15.10e * ds[0], %15.10e * ds[1], %15.10e * ds[2])\n' % (l[0], l[1], l[2])
+        self.file_string += 'bpy.context.object.location = s\n'
+        #self.file_string += 'bpy.context.object.scale = (%15.10e, %15.10e, %15.10e)\n' % (axis[0], axis[1], axis[2])
+        self.file_string += 'bpy.ops.object.transform_apply(location=True)\n'
+
     def boolean(self, left, right, operation, unlink=True):
         if operation == "DIFFERENCE":
             op = 'less'
@@ -418,6 +433,9 @@ class pyb(object):
             self.file_string += 'bpy.context.scene.objects.unlink(%s)\n' % right
         self.file_string += 'bpy.context.scene.objects.active = bpy.context.object\n'
         self.file_string += '%s = bpy.context.object\n' % (left + "_" + op + "_" + right)
+
+    def unlink(self, name):
+        self.file_string += 'bpy.context.scene.objects.unlink(%s)\n' % name
 
     def flat(self, name="Flat", color='#555555', alpha=1.0):
         self.file_string += '%s = bpy.data.materials.new("%s")\n' % (name, name)
