@@ -318,7 +318,7 @@ class pyb(object):
 
     def cone(self, c=(0., 0., 0.), r1=None, r2=None, h=None, name="cone",
              color=None, direction='z', alpha=1.0, emis=False, layer='render',
-             **kwargs):
+             rotation=None, **kwargs):
         """ ``cone`` makes a truncated cone with height ``h`` and radii ``r1``
             and ``r2``.
 
@@ -343,25 +343,26 @@ class pyb(object):
         self.file_string += 'radius1=%15.10e, radius2=%15.10e,' % (r1, r2)
         self.file_string += ' depth=%15.10e)\n' % (h)
         self.file_string += 'bpy.context.object.name = "%s"\n' % (name)
-        rotation = [0., 0., 0.]
-        if direction == 'z':
-            direction = 2
-            rotdir = 2
-        elif direction == 'y':
-            direction = 1
-            rotdir = 0
-        elif direction == 'x':
-            direction = 0
-            rotdir = 1
-        else:
-            direction = int(direction)
-            if direction == 0:
-                rotdir = 1
-            elif direction == 1:
-                rotdir = 0
-            else:
+        if rotation is None:
+            rotation = [0., 0., 0.]
+            if direction == 'z':
+                direction = 2
                 rotdir = 2
-        rotation[rotdir] = np.pi/2.
+            elif direction == 'y':
+                direction = 1
+                rotdir = 0
+            elif direction == 'x':
+                direction = 0
+                rotdir = 1
+            else:
+                direction = int(direction)
+                if direction == 0:
+                    rotdir = 1
+                elif direction == 1:
+                    rotdir = 0
+                else:
+                    rotdir = 2
+            rotation[rotdir] = np.pi/2.
         # axis = [r, r, r]
         c = list(c)
         # axis[direction] = h/2.
