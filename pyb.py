@@ -12,7 +12,6 @@ from IPython.display import display, HTML
 import random
 from psgv import psgv
 
-
 np.set_printoptions(threshold=np.nan)
 
 cutawayid = psgv.psgv('__cutaway_id__')
