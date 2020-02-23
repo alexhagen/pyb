@@ -11,9 +11,10 @@ import copy
 from IPython.display import display, HTML
 import random
 from psgv import psgv
+import copy
 
 
-np.set_printoptions(threshold=np.nan)
+np.set_printoptions(threshold=sys.maxsize)
 
 cutawayid = psgv.psgv('__cutaway_id__')
 cutawayid.val = 1
@@ -40,6 +41,9 @@ class pyb(object):
         self._draft = False
         self.path = os.getcwd()
         self.scene_setup()
+
+    def copy(self):
+        return copy.deepcopy(self)
 
     def scene_setup(self):
         """ deletes the default cube and sets up a scene to be used to render
@@ -616,7 +620,8 @@ class pyb(object):
         self.file_string += 'camera_track.target = (bpy.data.objects["%s"])\n' % target
 
     def peek(self, camera_location=(500, 500, 300), c=(0., 0., 0.),
-             l=(250., 250., 250.), fit=True, filename=None, **kwargs):
+             l=(250., 250., 250.), fit=True, filename=None,
+             perspective=True, **kwargs):
         """Render an opengl example of the 3d scene.
 
         :param tuple camera_location: location of the camera.
@@ -648,6 +653,8 @@ class pyb(object):
             (camera_location[0], camera_location[1], camera_location[2])
         self.file_string += 'bpy.data.cameras[camera.name].clip_end = 10000.0\n'
         self.file_string += 'bpy.data.cameras[camera.name].clip_start = 0.0\n'
+        if not perspective:
+            self.file_string += 'bpy.data.cameras[camera.name].type = "ORTHO"\n'
         self.file_string += 'camera_track = camera.constraints.new("TRACK_TO")\n'
         self.file_string += 'camera_track.track_axis = "TRACK_NEGATIVE_Z"\n'
         self.file_string += 'camera_track.up_axis = "UP_Y"\n'
@@ -696,7 +703,8 @@ class pyb(object):
 
     def render(self, camera_location=(500, 500, 300), c=(0., 0., 0.),
                l=(250., 250., 250.), render=True, fit=True, samples=20,
-               res=[1920, 1080], draft=False, freestyle=True, **kwargs):
+               res=[1920, 1080], draft=False, freestyle=True,
+               perspective=True, **kwargs):
         if self._draft or draft:
             res = [640, 480]
             samples = 10
@@ -725,6 +733,9 @@ class pyb(object):
             (camera_location[0], camera_location[1], camera_location[2])
         self.file_string += 'bpy.data.cameras[camera.name].clip_end = 10000.0\n'
         self.file_string += 'bpy.data.cameras[camera.name].clip_start = 0.0\n'
+        if not perspective:
+            self.file_string += 'bpy.data.cameras[camera.name].type = "ORTHO"\n'
+            self.file_string += 'bpy.data.cameras[camera.name].ortho_scale = 350\n'
         self.file_string += 'camera_track = camera.constraints.new("TRACK_TO")\n'
         self.file_string += 'camera_track.track_axis = "TRACK_NEGATIVE_Z"\n'
         self.file_string += 'camera_track.up_axis = "UP_Y"\n'
