@@ -320,6 +320,75 @@ class pyb(object):
             self.emis(name="%s_color" % name, color=color, **kwargs)
             self.set_matl(obj=name, matl="%s_color" % name)
 
+    def pyramid(self, c=(0., 0., 0.), tw=None, bw=None, h=None, name="pyramid",
+                color=None, direction='z', alpha=1.0, emis=False, layer='render',
+                rotation=None, **kwargs):
+        self.name = name
+        rotation = [0., 0., 0.]
+        if direction == 'z':
+            direction = 2
+            rotdir = 2
+        elif direction == 'y':
+            direction = 1
+            rotdir = 0
+        elif direction == 'x':
+            direction = 0
+            rotdir = 1
+        else:
+            direction = int(direction)
+            if direction == 0:
+                rotdir = 1
+            elif direction == 1:
+                rotdir = 0
+            else:
+                rotdir = 2
+        rotation[rotdir] = np.pi/2.
+        c = list(c)
+        #c[direction] += h/2.
+        self.file_string += f"verts = [\n"
+        self.file_string += f"         ({- tw/2.0}, {- tw/2.0}, {h/2.0}),\n"
+        self.file_string += f"         ({tw/2.0}, {- tw/2.0}, {h/2.0}),\n"
+        self.file_string += f"         ({tw/2.0}, {tw/2.0}, {h/2.0}),\n"
+        self.file_string += f"         ({- tw/2.0}, {tw/2.0}, {h/2.0}),\n"
+        self.file_string += f"         ({- bw/2.0}, {- bw/2.0}, {- h/2.0}),\n"
+        self.file_string += f"         ({bw/2.0}, {- bw/2.0}, {- h/2.0}),\n"
+        self.file_string += f"         ({bw/2.0}, {bw/2.0}, {- h/2.0}),\n"
+        self.file_string += f"         ({- bw/2.0}, {bw/2.0}, {- h/2.0}),\n"
+        self.file_string += f"        ]\n"
+        self.file_string += f"faces = [(0, 1, 2, 3), (4, 5, 1, 0),\n"
+        self.file_string += f"         (5, 6, 2, 1), (6, 7, 3, 2),\n"
+        self.file_string += f"         (7, 4, 0, 3), (4, 5, 6, 7)]\n"
+        self.file_string += f"edges = []\n"
+        self.file_string += f"mesh = bpy.data.meshes.new(\"{name}_mesh\")\n"
+        self.file_string += f"mesh.from_pydata(verts, edges, faces)\n"
+        self.file_string += f"obj = bpy.data.objects.new(\"{name}\", mesh)\n"
+        self.file_string += f"obj.location = ({c[0]}, {c[1]}, {c[2]})\n"
+        self.file_string += f"scene = bpy.context.scene\n"
+        self.file_string += f"scene.objects.link(obj)\n"
+        self.file_string += 'obj.select = True\n'
+        self.file_string += 'scene.objects.active = obj\n'
+        self.file_string += f"{name} = bpy.context.object\n"
+        self.file_string += 'bpy.context.object.rotation_euler = '
+        self.file_string += '(%15.10e, %15.10e, %15.10e)\n' % \
+            (rotation[0], rotation[1], rotation[2])
+        self.file_string += 'bpy.ops.object.transform_apply(rotation=True)\n'
+        self.file_string += 'bpy.context.object.location = '
+        self.file_string += '(%15.10e, %15.10e, %15.10e)\n' % \
+            (c[0], c[1], c[2])
+        self.file_string += 'bpy.ops.object.transform_apply(location=True)\n'
+        self.file_string += '%s = bpy.context.object\n' % (name)
+        if layer == 'render':
+            self.file_string += 'fg.objects.link({name})\n'.format(name=name)
+        elif layer == 'trans':
+            self.file_string += 'tg.objects.link({name})\n'.format(name=name)
+        self.file_string += "{name} = bpy.context.object\n".format(name=name)
+        if color is not None and not emis:
+            self.flat(name="%s_color" % name, color=color, alpha=alpha)
+            self.set_matl(obj=name, matl="%s_color" % name)
+        elif color is not None and emis:
+            self.emis(name="%s_color" % name, color=color, **kwargs)
+            self.set_matl(obj=name, matl="%s_color" % name)
+
     def cone(self, c=(0., 0., 0.), r1=None, r2=None, h=None, name="cone",
              color=None, direction='z', alpha=1.0, emis=False, layer='render',
              rotation=None, **kwargs):
@@ -716,9 +785,9 @@ class pyb(object):
         self.file_string += '    pass\n'
         self.file_string += 'bpy.ops.object.visual_transform_apply()\n'
         self.file_string += 'bpy.data.scenes["Scene"].render.engine = "CYCLES"\n'
-        self.file_string += 'render = bpy.data.scenes["Scene"].render\n'
         self.file_string += 'bpy.data.scenes["Scene"].render.resolution_x = %d * 2.\n' % resw
         self.file_string += 'bpy.data.scenes["Scene"].render.resolution_y = %d * 2.\n' % resh
+        self.file_string += 'render = bpy.data.scenes["Scene"].render\n'
         self.file_string += 'world = bpy.data.worlds["World"]\n'
         self.file_string += 'world.use_nodes = True\n'
         self.file_string += 'empty = bpy.data.objects.new("Empty", None)\n'
@@ -785,10 +854,10 @@ class pyb(object):
             self.file_string += 'bpy.ops.render.render( write_still=True )\n'
         self.file_string += 'modelview_matrix = camera.matrix_world.inverted()\n'
         self.file_string += 'projection_matrix = camera.calc_matrix_camera(\n'
-        self.file_string += '        render.resolution_x / 2.0,\n'
-        self.file_string += '        render.resolution_y / 2.0,\n'
-        self.file_string += '        render.pixel_aspect_x,\n'
-        self.file_string += '        render.pixel_aspect_y,\n'
+        self.file_string += '        bpy.data.scenes["Scene"].render.resolution_x / 2.0,\n'
+        self.file_string += '        bpy.data.scenes["Scene"].render.resolution_y / 2.0,\n'
+        self.file_string += '        bpy.data.scenes["Scene"].render.pixel_aspect_x,\n'
+        self.file_string += '        bpy.data.scenes["Scene"].render.pixel_aspect_y,\n'
         self.file_string += '        )\n'
         self.file_string += 'P, K, RT = get_3x4_P_matrix_from_blender(camera)\n'
         self.file_string += 'import os\n'
