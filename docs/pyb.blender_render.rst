@@ -1,7 +1,7 @@
-pyb.blender_render module
-=========================
+pyb.blender\_render module
+==========================
 
 .. automodule:: pyb.blender_render
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

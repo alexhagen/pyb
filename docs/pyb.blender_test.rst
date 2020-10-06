@@ -1,7 +1,7 @@
-pyb.blender_test module
-=======================
+pyb.blender\_test module
+========================
 
 .. automodule:: pyb.blender_test
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

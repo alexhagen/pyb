@@ -1,7 +1,7 @@
-pyb.blender_geo module
-======================
+pyb.blender\_geo module
+=======================
 
 .. automodule:: pyb.blender_geo
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -6,10 +6,13 @@ docs: FORCE
 	pandoc README.md -o docs/README.rst; \
 	cd docs/; \
 	sphinx-apidoc -e -f -M -o ./ ../; \
+	cd ~/code/pyb/docs/; \
+	make html
+
+
+publish: FORCE
 	cd ~/pages/pyb/; \
 	git rm -r *; \
-	cd ~/code/pyb/docs/; \
-	make html; \
 	cp -r _build/html/* ~/pages/pyb/; \
 	cd ~/pages/pyb; \
 	touch .nojekyll; \

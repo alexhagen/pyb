@@ -150,12 +150,23 @@ class pyb(object):
             c = [(x1 + x2)/2., (y1 + y2)/2., (z1 + z2)/2.]
             l = [x2 - x1, y2 - y1, z2 - z1]
         if c is not None and l is not None:
+            r = [0.0, 0.0, 0.0]
+            if l[0] == 0.0:
+                rotdir = 0
+            elif l[1] == 0.0:
+                rotdir = 1
+            elif l[2] == 0.0:
+                rotdir = 2
+            r[rotdir] = np.pi/2.
             self.file_string += 'bpy.ops.mesh.primitive_plane_add()\n'
             self.file_string += 'bpy.context.object.name = "%s"\n' % (name)
-            self.file_string += 'bpy.context.object.location = (%15.10e, %15.10e, %15.10e)\n' % (c[0], c[1], c[2])
             self.file_string += 'bpy.context.object.scale = (%15.10e, %15.10e, %15.10e)\n' % (l[0]/2., l[1]/2., l[2]/2.)
-            #self.file_string += 'bpy.context.object.rotation = (%15.10e, %15.10e, %15.10e)\n' % (r[0]/2., r[1]/2., r[2]/2.)
-            self.file_string += 'bpy.ops.object.transform_apply(location=True, scale=True)\n'
+            self.file_string += 'bpy.ops.object.transform_apply(scale=True)\n'
+            self.file_string += 'bpy.context.object.location = (%15.10e, %15.10e, %15.10e)\n' % (c[0], c[1], c[2])
+            self.file_string += 'bpy.ops.object.transform_apply(location=True)\n'
+            
+            self.file_string += 'bpy.context.object.rotation = (%15.10e, %15.10e, %15.10e)\n' % (r[0], r[1], r[2])
+            self.file_string += 'bpy.ops.object.transform_apply(rotation=True)\n'
             self.file_string += '%s = bpy.context.object\n' % (name)
             if layer == 'render':
                 self.file_string += 'fg.objects.link({name})\n'.format(name=name)
@@ -176,7 +187,13 @@ class pyb(object):
         #self.rpp(c=arr[0], l=[0.01, 0.01, 0.01], name='sphere', color=color, alpha=alpha)
         ri = np.random.randint(1E9)
         self.file_string += 'bpy.context.scene.cursor_location = (0.0, 0.0, 0.0)\n'
-        self.sph(c=arr[0], r=r, name='sphere%d' % ri, color=color, alpha=alpha, layer=layer)
+        meanx = np.mean(arr[:, 0])
+        meany = np.mean(arr[:, 1])
+        meanz = np.mean(arr[:, 2])
+        firstx = arr[0, 0]
+        firsty = arr[0, 1]
+        firstz = arr[0, 2]
+        self.sph(c=arr[0, :], r=r, name='sphere%d' % ri, color=color, alpha=alpha, layer=layer)
         self.file_string += 'arr = [[%e, %e, %e],\n' % (arr[1, 0], arr[1, 1], arr[1, 2])
         for row in arr[2:]:
             self.file_string += '      [%e, %e, %e],\n' % (row[0], row[1], row[2])
@@ -186,9 +203,12 @@ class pyb(object):
         self.file_string += '    ob = sphere%d.copy()\n' % ri
         #self.file_string += '    bpy.context.scene.cursor_location = (0.0, 0.0, 0.0)\n'
         self.file_string += '    scene.objects.link(ob)\n'
-        self.file_string += '    ob.location.x = row[0] - arr[0][0]\n'
-        self.file_string += '    ob.location.y = row[1] - arr[0][1]\n'
-        self.file_string += '    ob.location.z = row[2] - arr[0][2]\n'
+        #self.file_string += f'    ob.location.x = row[0] - arr[0][0] - {meanx}\n'
+        #self.file_string += f'    ob.location.y = row[1] - arr[0][1] - {meany}\n'
+        #self.file_string += f'    ob.location.z = row[2] - arr[0][2] - {meanz}\n'
+        self.file_string += f'    ob.location.x = row[0] - {firstx}\n'
+        self.file_string += f'    ob.location.y = row[1] - {firsty}\n'
+        self.file_string += f'    ob.location.z = row[2] - {firstz}\n'
         #self.file_string += '    bpy.ops.object.transform_apply(location=True, scale=True)\n'
         self.file_string += '    bpy.context.scene.update()\n'
         #self.file_string += '    bpy.context.scene.cursor_location = (0.0, 0.0, 0.0)\n'
@@ -535,7 +555,7 @@ class pyb(object):
         #self.file_string += '%s = flat\n' % name
 
     def emis(self, name="Source", color="#555555", alpha=1.0, volume=False,
-             emittance=5.0, **kwargs):
+             emittance=1.0, **kwargs):
         rgb = Color(color).rgb
         self.file_string += 'source = bpy.data.materials.new("%s")\n' % name
         self.file_string += 'source.use_nodes = True\n'
@@ -773,7 +793,7 @@ class pyb(object):
     def render(self, camera_location=(500, 500, 300), c=(0., 0., 0.),
                l=(250., 250., 250.), render=True, fit=True, samples=20,
                res=[1920, 1080], draft=False, freestyle=True,
-               perspective=True, **kwargs):
+               perspective=True, pscale=350, **kwargs):
         if self._draft or draft:
             res = [640, 480]
             samples = 10
@@ -804,7 +824,7 @@ class pyb(object):
         self.file_string += 'bpy.data.cameras[camera.name].clip_start = 0.0\n'
         if not perspective:
             self.file_string += 'bpy.data.cameras[camera.name].type = "ORTHO"\n'
-            self.file_string += 'bpy.data.cameras[camera.name].ortho_scale = 350\n'
+            self.file_string += f'bpy.data.cameras[camera.name].ortho_scale = {pscale}\n'
         self.file_string += 'camera_track = camera.constraints.new("TRACK_TO")\n'
         self.file_string += 'camera_track.track_axis = "TRACK_NEGATIVE_Z"\n'
         self.file_string += 'camera_track.up_axis = "UP_Y"\n'

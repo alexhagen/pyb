@@ -2,9 +2,9 @@ pyb package
 ===========
 
 .. automodule:: pyb
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Submodules
 ----------
@@ -17,4 +17,4 @@ Submodules
    pyb.blender_render
    pyb.blender_test
    pyb.pyb
-
+   pyb.setup
