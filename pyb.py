@@ -107,7 +107,7 @@ class pyb(object):
         self.file_string += "{name} = bpy.context.object\n".format(name=name)
 
     def volume(self, matrix, c=[0., 0., 0.], name="volume", layer="render", cmap='gray', normalization='layer',
-               density_ramp='exp', density_ramp_coeffs=[2.0,], density_multiplier=1.0, color=None, color_ramp=None,
+               density_ramp='exp', density_ramp_coeffs=[2.0,], density_cutoff=0.5, density_multiplier=1.0, color=None, color_ramp=None,
                idx=None):
         import pyopenvdb as vdb
         import numpy as np
@@ -121,10 +121,10 @@ class pyb(object):
             density = np.empty(matrix.shape)
             _color = np.empty((matrix.shape[0], matrix.shape[1], matrix.shape[2], 3))
             for i, layer in enumerate(matrix):
-                _density = np.exp(2.0*layer)
+                _density = np.exp(density_ramp_coeffs[0]*layer)
                 norm = Normalize(vmin=np.min(_density), vmax=np.max(_density))
                 _density = norm(_density)
-                _density[_density<0.5] = 0.0
+                _density[_density<density_cutoff] = 0.0
                 density[i, ...] = _density
                 __color = layer
                 norm = Normalize(vmin=np.min(__color), vmax=np.max(__color))
