@@ -2,7 +2,7 @@ import bpy
 
 class brender:
     def __init__(self, filename, objects=None):
-        bpy.context.scene.objects.active.select = False
+        bpy.context.collection.objects.active.select = False
         if objects is not None:
             for object in objects:
                 object.object.select = True

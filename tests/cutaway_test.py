@@ -160,9 +160,9 @@ bpy.context.object.location = (0.0000000000e+00, 0.0000000000e+00, 2.0000000000e
 bpy.context.object.scale = (1.0000000000e+01, 1.0000000000e+01, 1.0000000000e+00)
 bpy.ops.object.transform_apply(location=True, scale=True)
 cutaway1 = bpy.context.object
-bpy.context.scene.objects.active = bpy.data.objects[0]
+bpy.context.collection.objects.active = bpy.data.objects[0]
 for ob in bpy.data.objects:
-    bpy.context.scene.objects.active = ob
+    bpy.context.collection.objects.active = ob
     if ob.name != "cutaway1":
         obname = ob.name
         try:
@@ -173,9 +173,9 @@ for ob in bpy.data.objects:
             bpy.ops.object.modifier_apply(apply_as="DATA", modifier=obname + "cut")
         except AttributeError:
             pass
-bpy.context.scene.objects.unlink(cutaway1)
-bpy.context.scene.objects.active = bpy.context.object
-bpy.context.scene.objects.active.select = False
+bpy.context.collection.objects.unlink(cutaway1)
+bpy.context.collection.objects.active = bpy.context.object
+bpy.context.collection.objects.active.select = False
 bpy.ops.object.visual_transform_apply()
 bpy.data.scenes["Scene"].render.engine = "CYCLES"
 render = bpy.data.scenes["Scene"].render
@@ -184,7 +184,7 @@ bpy.data.scenes["Scene"].render.resolution_y = 420 * 2.
 world = bpy.data.worlds["World"]
 world.use_nodes = True
 empty = bpy.data.objects.new("Empty", None)
-bpy.context.scene.objects.link(empty)
+bpy.context.collection.objects.link(empty)
 empty.empty_draw_size = 1
 empty.empty_draw_type = "CUBE"
 bpy.data.objects["Empty"].location = (0.0000000000e+00, 0.0000000000e+00, 0.0000000000e+00)

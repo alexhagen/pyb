@@ -61,8 +61,8 @@ class pyb(object):
         self.file_string += 'scene = bpy.context.scene\n'
         self.file_string += '# First, delete the default cube\n'
         self.file_string += 'bpy.ops.object.delete()\n'
-        self.file_string += 'fg = bpy.data.groups.new("freestyle_group")\n'
-        self.file_string += 'tg = bpy.data.groups.new("transparent_group")\n'
+        #self.file_string += 'fg = bpy.data.groups.new("freestyle_group")\n'
+        #self.file_string += 'tg = bpy.data.groups.new("transparent_group")\n'
         #self.file_string += 'bpy.ops.scene.render_layer_add()\n'
 
     def sun(self, strength=1.0):
@@ -81,9 +81,9 @@ class pyb(object):
         self.file_string += 'lamp_data.use_nodes = True\n'
         self.file_string += 'lamp_data.node_tree.nodes["Emission"].inputs[1].default_value = %15.10e\n' % strength
         self.file_string += 'lamp_object = bpy.data.objects.new(name="Sun", object_data=lamp_data)\n'
-        self.file_string += 'bpy.context.scene.objects.link(lamp_object)\n'
+        self.file_string += 'bpy.context.collection.objects.link(lamp_object)\n'
         self.file_string += 'lamp_object.select = True\n'
-        self.file_string += 'bpy.context.scene.objects.active = lamp_object\n'
+        self.file_string += 'bpy.context.collection.objects.active = lamp_object\n'
         return self
 
     def point(self, location=(0., 0., 0.), strength=1.0, name="Point",
@@ -92,19 +92,82 @@ class pyb(object):
         self.file_string += 'lamp_data.use_nodes = True\n'
         self.file_string += 'lamp_data.node_tree.nodes["Emission"].inputs[1].default_value = %15.10e\n' % strength
         self.file_string += 'lamp_object = bpy.data.objects.new(name="%s", object_data=lamp_data)\n' % name
-        self.file_string += 'bpy.context.scene.objects.link(lamp_object)\n'
+        self.file_string += 'bpy.context.collection.objects.link(lamp_object)\n'
         self.file_string += 'lamp_object.location = (%15.10e, %15.10e, %15.10e)\n' % (location[0], location[1], location[2])
         rgb = Color(color).rgb
         self.file_string += 'lamp_object.color = (%6.4f, %6.4f, %6.4f, %6.4f)\n' % (rgb[0], rgb[1], rgb[2], alpha)
         self.file_string += 'bpy.ops.object.transform_apply(location=True)\n'
         self.file_string += 'lamp_object.select = True\n'
-        self.file_string += 'bpy.context.scene.objects.active = lamp_object\n'
+        self.file_string += 'bpy.context.collection.objects.active = lamp_object\n'
         name = 'lamp_object'
         if layer == 'render':
             self.file_string += 'fg.objects.link({name})\n'.format(name=name)
         elif layer == 'trans':
             self.file_string += 'tg.objects.link({name})\n'.format(name=name)
         self.file_string += "{name} = bpy.context.object\n".format(name=name)
+
+    def volume(self, matrix, c=[0., 0., 0.], name="volume", layer="render", cmap='gray', normalization='layer',
+               density_ramp='exp', density_ramp_coeffs=[2.0,], density_multiplier=1.0, color=None, color_ramp=None,
+               idx=None):
+        import pyopenvdb as vdb
+        import numpy as np
+        import matplotlib.cm as cm
+        from matplotlib.colors import Normalize, to_hex, hsv_to_rgb, rgb_to_hsv
+        filename = f'{name}_vdb_data'
+        if isinstance(cmap, str):
+            cmap = cm.ScalarMappable(None, cmap)
+            cmap = cmap.get_cmap()
+        if normalization == 'layer':
+            density = np.empty(matrix.shape)
+            _color = np.empty((matrix.shape[0], matrix.shape[1], matrix.shape[2], 3))
+            for i, layer in enumerate(matrix):
+                _density = np.exp(2.0*layer)
+                norm = Normalize(vmin=np.min(_density), vmax=np.max(_density))
+                _density = norm(_density)
+                _density[_density<0.5] = 0.0
+                density[i, ...] = _density
+                __color = layer
+                norm = Normalize(vmin=np.min(__color), vmax=np.max(__color))
+                __color = cmap(norm(__color))
+                __color = __color[:, :, :3]
+                _color[i, ...] = __color
+        elif normalization == 'global':
+            density = np.copy(matrix)
+            norm = Normalize(vmin=np.nanmin(density), vmax=np.nanmax(density))
+            density = norm(density)
+            _color = cmap(norm(matrix))
+            _color = _color[:, :, :, :3]
+        if idx is not None:
+            density = density[idx]
+            _color = _color[idx]
+        density_grid = vdb.FloatGrid()
+        density_grid.copyFromArray(density)
+        density_grid.name = 'density'
+        color_grid = vdb.Vec3SGrid()
+        color_grid.copyFromArray(_color)
+        color_grid.name = 'color'
+        vdb.write(f'{filename}.vdb', [density_grid, color_grid])
+        #c[0] = c[0] - matrix.shape[0]/2.0
+        #c[1] = c[1] - matrix.shape[1]/2.0
+        #c[2] = c[2] - matrix.shape[2]/2.0
+        self.file_string += f"bpy.ops.object.volume_import(filepath=\'{filename}.vdb\', location=({c[0]},{c[1]},{c[2]}))\n"
+        self.file_string += 'bpy.context.object.name = "%s"\n' % (name)
+        self.file_string += '%s = bpy.context.object\n' % (name)
+        matl_name = f"{name}_color"
+        if color is None:
+            color_attribute = 'color'
+        else:
+            color_attribute = None
+        if density_ramp != 'flat':
+            density_attribute = density
+        else:
+            density_attribute = None
+        density_multiplier = density_multiplier
+        self.principled_volume(name=matl_name,
+                               color=color, color_attribute=color_attribute, density_attribute=density_attribute,
+                               density_multiplier=density_multiplier)
+        self.set_matl(obj=name, matl=matl_name)
+
 
     def rpp(self, x1=None, x2=None, y1=None, y2=None, z1=None, z2=None, c=None,
             l=None, name="rpp", color=None, alpha=1.0, verts=None,
@@ -125,7 +188,7 @@ class pyb(object):
             self.file_string += 'mesh = bpy.data.meshes.new("%s")\n' % (name)
             self.file_string += '%s = bpy.data.objects.new("%s", mesh)\n' % (name, name)
             self.file_string += 'bpy.context.object.name = "%s"\n' % name
-            self.file_string += 'bpy.context.scene.objects.link(%s)\n' % name
+            self.file_string += 'bpy.context.collection.objects.link(%s)\n' % name
             self.file_string += 'verts = %s\n' % repr(verts)
             self.file_string += 'faces = [(0,1,3,2), (4,5,7,6), (0,1,5,4), (2,3,7,6), (1,3,7,5), (0,2,6,4)]\n'
             self.file_string += 'mesh.from_pydata(verts, [], faces)\n'
@@ -516,7 +579,7 @@ class pyb(object):
         elif operation == "INTERSECT":
             op = 'inter'
         name = left + "_" + operation.lower() + "_" + right
-        self.file_string += 'bpy.context.scene.objects.active = %s\n' % (left)
+        self.file_string += 'bpy.context.collection.objects.active = %s\n' % (left)
         self.file_string += '%s = bpy.context.object.modifiers.new(type="BOOLEAN", name="%s")\n' % (name, left + "_" + operation.lower() + "_" + right)
         self.file_string += '%s.operation = "%s"\n' % (name, operation)
         self.file_string += '%s.object = %s\n' % (name, right)
@@ -524,12 +587,30 @@ class pyb(object):
         self.file_string += '%s.solver = "CARVE"\n' % (name)
         self.file_string += 'bpy.ops.object.modifier_apply(apply_as="DATA", modifier="%s")\n' % (left + "_" + operation.lower() + "_" + right)
         if unlink:
-            self.file_string += 'bpy.context.scene.objects.unlink(%s)\n' % right
-        self.file_string += 'bpy.context.scene.objects.active = bpy.context.object\n'
+            self.file_string += 'bpy.context.collection.objects.unlink(%s)\n' % right
+        self.file_string += 'bpy.context.collection.objects.active = bpy.context.object\n'
         self.file_string += '%s = bpy.context.object\n' % (left + "_" + op + "_" + right)
 
     def unlink(self, name):
-        self.file_string += 'bpy.context.scene.objects.unlink(%s)\n' % name
+        self.file_string += 'bpy.context.collection.objects.unlink(%s)\n' % name
+
+    def principled_volume(self, name="PVol", color='#555555', alpha=1.0, color_attribute=None, density_attribute=None, **kwargs):
+        self.file_string += '%s = bpy.data.materials.new("%s")\n' % (name, name)
+        print(color, color_attribute)
+        rgb = Color(color).rgb
+        self.file_string += '%s.use_nodes = True\n' % name
+        self.file_string += 'nodes = %s.node_tree.nodes\n' % name
+        self.file_string += 'for key in nodes.values():\n'
+        self.file_string += '    nodes.remove(key)\n'
+        self.file_string += 'links = %s.node_tree.links\n' % name
+        self.file_string += '%s_volp = nodes.new("ShaderNodeVolumePrincipled")\n' % name
+        self.file_string += f'{name}_volp.inputs[1].default_value = \'color\'\n'
+        self.file_string += f'{name}_volp.inputs[3].default_value = \'density\'\n'
+        self.file_string += '%s_material_output = nodes.new("ShaderNodeOutputMaterial")\n' % name
+        self.file_string += 'links.new(%s_volp.outputs[0], %s_material_output.inputs[1])\n' % (name, name)
+        self.file_string += 'for node in nodes:\n'
+        self.file_string += '    node.update()\n'
+        #self.file_string += '%s = flat\n' % name
 
     def flat(self, name="Flat", color='#555555', alpha=1.0):
         self.file_string += '%s = bpy.data.materials.new("%s")\n' % (name, name)
@@ -605,7 +686,7 @@ class pyb(object):
         self.file_string += "scene = bpy.context.scene\n".format(name=name)
         self.file_string += "scene.objects.link({name}_object)\n".format(name=name)
         self.file_string += "{name}_object.select = True\n".format(name=name)
-        self.file_string += "bpy.context.scene.objects.active = {name}_object\n".format(name=name)
+        self.file_string += "bpy.context.collection.objects.active = {name}_object\n".format(name=name)
         self.file_string += "bpy.ops.object.convert(target=\"CURVE\")\n".format(name=name)
         self.file_string += "{name}_object.data.fill_mode = \"FULL\"\n".format(name=name)
         self.file_string += "{name}_object.data.bevel_depth = {bevel}\n".format(name=name, bevel=bevel)
@@ -664,8 +745,8 @@ class pyb(object):
         self.file_string += '%s = source\n' % name
 
     def set_matl(self, obj=None, matl=None):
-        # self.file_string += 'obj = bpy.context.scene.objects.get("%s")\n' % obj
-        # self.file_string += 'bpy.context.scene.objects.active = obj\n'
+        # self.file_string += 'obj = bpy.context.collection.objects.get("%s")\n' % obj
+        # self.file_string += 'bpy.context.collection.objects.active = obj\n'
         self.file_string += '%s.active_material = %s\n' % (obj, matl)
 
     def split_scene(self, filename):
@@ -689,9 +770,9 @@ class pyb(object):
         self.file_string += 'bpy.context.object.scale = (%15.10e, %15.10e, %15.10e)\n' % (l[0]/2., l[1]/2., l[2]/2.)
         self.file_string += 'bpy.ops.object.transform_apply(location=True, scale=True)\n'
         self.file_string += '%s = bpy.context.object\n' % (name)
-        self.file_string += 'bpy.context.scene.objects.active = bpy.data.objects[0]\n'
+        self.file_string += 'bpy.context.collection.objects.active = bpy.data.objects[0]\n'
         self.file_string += 'for ob in bpy.data.objects:\n'
-        self.file_string += '    bpy.context.scene.objects.active = ob\n'
+        self.file_string += '    bpy.context.collection.objects.active = ob\n'
         self.file_string += '    if ob.name != "%s" and exclude not in ob.name:\n' % name
         self.file_string += '        obname = ob.name\n'
         self.file_string += '        try:\n'
@@ -702,8 +783,8 @@ class pyb(object):
         self.file_string += '            bpy.ops.object.modifier_apply(apply_as="DATA", modifier=obname + "cut")\n'
         self.file_string += '        except AttributeError:\n'
         self.file_string += '            pass\n'
-        self.file_string += 'bpy.context.scene.objects.unlink(%s)\n' % name
-        self.file_string += 'bpy.context.scene.objects.active = bpy.context.object\n'
+        self.file_string += 'bpy.context.collection.objects.unlink(%s)\n' % name
+        self.file_string += 'bpy.context.collection.objects.active = bpy.context.object\n'
 
     def look_at(self, target=None):
         self.file_string += 'camera_track.target = (bpy.data.objects["%s"])\n' % target
@@ -724,16 +805,16 @@ class pyb(object):
         resw = res[0]
         resh = res[1]
         self.old_file_string = self.file_string
-        self.file_string += 'bpy.context.scene.objects.active.select = False\n'
+        self.file_string += 'bpy.context.collection.objects.active.select = False\n'
         self.file_string += 'bpy.ops.object.visual_transform_apply()\n'
         self.file_string += 'bpy.data.scenes["Scene"].render.engine = "CYCLES"\n'
         self.file_string += 'render = bpy.data.scenes["Scene"].render\n'
         self.file_string += 'world = bpy.data.worlds["World"]\n'
         self.file_string += 'world.use_nodes = True\n'
         self.file_string += 'empty = bpy.data.objects.new("Empty", None)\n'
-        self.file_string += 'bpy.context.scene.objects.link(empty)\n'
-        self.file_string += 'empty.empty_draw_size = 1\n'
-        self.file_string += 'empty.empty_draw_type = "CUBE"\n'
+        self.file_string += 'bpy.context.collection.objects.link(empty)\n'
+        #self.file_string += 'empty.empty_draw_size = 1\n'
+        #self.file_string += 'empty.empty_draw_type = "CUBE"\n'
         self.file_string += 'bpy.data.objects["Empty"].location = (%15.10e, %15.10e, %15.10e)\n' % (c[0], c[1], c[2])
         self.file_string += 'bpy.data.objects["Empty"].scale = (%15.10e, %15.10e, %15.10e)\n' % (l[0]/2., l[1]/2., l[2]/2.)
         self.file_string += 'empty = bpy.data.objects["Empty"]\n'
@@ -754,6 +835,8 @@ class pyb(object):
         self.file_string += 'area.spaces[0].region_3d.view_perspective = \'CAMERA\'\n'
         self.file_string += 'bpy.ops.render.opengl( write_still=True )\n'
         self.file_string += 'modelview_matrix = camera.matrix_world.inverted()\n'
+        self.file_string += 'proj_matrix = camera.calc_matrix_camera(bpy.data.scenes["Scene"].view_layers["View Layer"].depsgraph)\n'
+        self.file_string += 'print(proj_matrix.shape)\n'
         self.file_string += 'projection_matrix = camera.calc_matrix_camera(\n'
         self.file_string += '        render.resolution_x / 2.0,\n'
         self.file_string += '        render.resolution_y / 2.0,\n'
@@ -793,14 +876,14 @@ class pyb(object):
     def render(self, camera_location=(500, 500, 300), c=(0., 0., 0.),
                l=(250., 250., 250.), render=True, fit=True, samples=20,
                res=[1920, 1080], draft=False, freestyle=True,
-               perspective=True, pscale=350, **kwargs):
+               perspective=True, pscale=350, bg_lum=1.0, **kwargs):
         if self._draft or draft:
             res = [640, 480]
             samples = 10
         resw = res[0]
         resh = res[1]
         self.file_string += 'try:\n'
-        self.file_string += '    bpy.context.scene.objects.active.select = False\n'
+        self.file_string += '    bpy.context.collection.objects.active.select = False\n'
         self.file_string += 'except AttributeError:\n'
         self.file_string += '    pass\n'
         self.file_string += 'bpy.ops.object.visual_transform_apply()\n'
@@ -811,9 +894,9 @@ class pyb(object):
         self.file_string += 'world = bpy.data.worlds["World"]\n'
         self.file_string += 'world.use_nodes = True\n'
         self.file_string += 'empty = bpy.data.objects.new("Empty", None)\n'
-        self.file_string += 'bpy.context.scene.objects.link(empty)\n'
-        self.file_string += 'empty.empty_draw_size = 1\n'
-        self.file_string += 'empty.empty_draw_type = "CUBE"\n'
+        self.file_string += 'bpy.context.collection.objects.link(empty)\n'
+        #self.file_string += 'empty.empty_draw_size = 1\n'
+        #self.file_string += 'empty.empty_draw_type = "CUBE"\n'
         self.file_string += 'bpy.data.objects["Empty"].location = (%15.10e, %15.10e, %15.10e)\n' % (c[0], c[1], c[2])
         self.file_string += 'bpy.data.objects["Empty"].scale = (%15.10e, %15.10e, %15.10e)\n' % (l[0]/2., l[1]/2., l[2]/2.)
         self.file_string += 'empty = bpy.data.objects["Empty"]\n'
@@ -830,18 +913,21 @@ class pyb(object):
         self.file_string += 'camera_track.up_axis = "UP_Y"\n'
         self.look_at(target="Empty")
         self.file_string += '# changing these values does affect the render.\n'
+        self.file_string += 'bpy.data.worlds[\'World\'].use_nodes = True\n'
+        self.file_string += 'bpy.data.worlds[\'World\'].node_tree.nodes[\'Background\'].inputs[0].default_value[:3] = (1,1,1)\n'
+        self.file_string += f'bpy.data.worlds[\'World\'].node_tree.nodes[\'Background\'].inputs[1].default_value = {bg_lum}\n'
         self.file_string += 'bg = world.node_tree.nodes["Background"]\n'
         self.file_string += 'bg.inputs[0].default_value[:3] = (1.0, 1.0, 1.0)\n'
-        self.file_string += 'bg.inputs[1].default_value = 1.0\n'
+        self.file_string += f'bg.inputs[1].default_value = {bg_lum}\n'
         self.file_string += 'bpy.data.scenes["Scene"].render.filepath = "%s" + ".png"\n' % self.filename
         self.file_string += 'bpy.context.scene.render.use_freestyle = %s\n' % freestyle
-        self.file_string += 'bpy.data.scenes["Scene"].layers[0] = True\n'
+        self.file_string += 'bpy.data.scenes["Scene"].view_layers[0].use_pass_normal = True\n'
         #self.file_string += 'print(bpy.data.scenes["Scene"].layers)\n'
         #self.file_string += 'print(bpy.data.scenes["Scene"].layers[0])\n'
         #self.file_string += 'print(dir(bpy.data.scenes["Scene"].render))\n'
         #self.file_string += 'sceneR = bpy.context.scene\n'
         #self.file_string += 'freestyle = sceneR.render.layers.active.freestyle_settings\n'
-        self.file_string += 'linestyle = bpy.context.scene.render.layers[0].freestyle_settings.linesets[0]\n'
+        self.file_string += 'linestyle = bpy.data.scenes["Scene"].view_layers[0].freestyle_settings.linesets[0]\n'
         #self.file_string += 'sceneR.render.use_freestyle = True\n'
         #self.file_string += 'sceneR.svg_export.use_svg_export = True\n'
         #self.file_string += 'freestyle.use_smoothness = True\n'
@@ -851,7 +937,7 @@ class pyb(object):
         #self.file_string += 'linestyle.visibility = "RANGE"\n'
         #self.file_string += 'linestyle.select_silhouette = True\n'
         #self.file_string += 'print(dir(linestyle))\n'
-        self.file_string += 'linestyle.select_by_group = True\n'
+        #self.file_string += 'linestyle.select_by_group = True\n'
         #self.file_string += 'linestyle.group = fg\n'
         #self.file_string += 'linestyle.group_negation = tg\n'
         #self.file_string += 'bpy.data.scenes["Scene"].render.layers["RenderLayer"].layers[0].use_freestyle = True\n'
@@ -869,21 +955,37 @@ class pyb(object):
         self.file_string += 'bpy.context.scene.cycles.transparent_min_bounces = 8\n'
         self.file_string += 'bpy.data.scenes["Scene"].cycles.film_transparent = True\n'
         self.file_string += 'bpy.context.scene.cycles.filter_glossy = 0.05\n'
+        self.file_string += 'bpy.data.scenes["Scene"].render.film_transparent = True\n'
         self.file_string += 'bpy.ops.wm.save_as_mainfile(filepath="%s.blend")\n' % self.filename
         if render:
             self.file_string += 'bpy.ops.render.render( write_still=True )\n'
         self.file_string += 'modelview_matrix = camera.matrix_world.inverted()\n'
-        self.file_string += 'projection_matrix = camera.calc_matrix_camera(\n'
-        self.file_string += '        bpy.data.scenes["Scene"].render.resolution_x / 2.0,\n'
-        self.file_string += '        bpy.data.scenes["Scene"].render.resolution_y / 2.0,\n'
-        self.file_string += '        bpy.data.scenes["Scene"].render.pixel_aspect_x,\n'
-        self.file_string += '        bpy.data.scenes["Scene"].render.pixel_aspect_y,\n'
-        self.file_string += '        )\n'
-        self.file_string += 'P, K, RT = get_3x4_P_matrix_from_blender(camera)\n'
+        self.file_string += 'print(dir(camera))\n'
+        #self.file_string += 'projection_matrix = camera.calc_matrix_camera(\n'
+        #self.file_string += '        bpy.data.scenes["Scene"].render.resolution_x / 2.0,\n'
+        #self.file_string += '        bpy.data.scenes["Scene"].render.resolution_y / 2.0,\n'
+        #self.file_string += '        bpy.data.scenes["Scene"].render.pixel_aspect_x,\n'
+        #self.file_string += '        bpy.data.scenes["Scene"].render.pixel_aspect_y,\n'
+        #self.file_string += '        )\n'
+
+        self.file_string += 'proj_matrix = camera.calc_matrix_camera(bpy.data.scenes["Scene"].view_layers["View Layer"].depsgraph,\n'
+        self.file_string += '                                        x = render.resolution_x / 2.0,\n'
+        self.file_string += '                                        y = render.resolution_y / 2.0,\n'
+        self.file_string += '                                        scale_x = render.pixel_aspect_x,\n'
+        self.file_string += '                                        scale_y = render.pixel_aspect_y,)\n'
+        #self.file_string += 'proj_matrix = camera.calc_matrix_camera(bpy.data.scenes["Scene"].view_layers["View Layer"].depsgraph
+        self.file_string += 'P = proj_matrix @ modelview_matrix\n'
+        #self.file_string += '_P, K, RT = get_3x4_P_matrix_from_blender(camera)\n'
+        self.file_string += 'persp_matrix = projection_matrix(camera.data)\n'
+        #self.file_string += 'print(persp_matrix)\n'
+        #self.file_string += 'P = persp_matrix\n'
         self.file_string += 'import os\n'
-        self.file_string += 'proj_matrix = "[[%15.10e, %15.10e, %15.10e, %15.10e],[%15.10e, %15.10e, %15.10e, %15.10e],[%15.10e, %15.10e, %15.10e, %15.10e]]" % (P[0][0], P[0][1], P[0][2], P[0][3], P[1][0], P[1][1], P[1][2], P[1][3], P[2][0], P[2][1], P[2][2], P[2][3])\n'
+        self.file_string += 'proj_matrix =  f"[[{P[0][0]:15.2e}, {P[0][1]:15.2e}, {P[0][2]:15.2e}, {P[0][3]:15.2e}],"\n'
+        self.file_string += 'proj_matrix +=  f"[{P[1][0]:15.2e}, {P[1][1]:15.2e}, {P[1][2]:15.2e}, {P[1][3]:15.2e}],"\n'
+        self.file_string += 'proj_matrix +=  f"[{P[2][0]:15.2e}, {P[2][1]:15.2e}, {P[2][2]:15.2e}, {P[2][3]:15.2e}],"\n'
+        self.file_string += 'proj_matrix +=  f"[{P[3][0]:15.2e}, {P[3][1]:15.2e}, {P[3][2]:15.2e}, {P[3][3]:15.2e}]]"\n'
         if render:
-            self.file_string += 'os.system("convert %s.png -set proj_matrix \'%%s\' %s.png" %% proj_matrix)\n' % (self.filename, self.filename)
+            self.file_string += f'os.system(f"convert {self.filename}.png -set proj_matrix \'{{proj_matrix}}\' {self.filename}.png")\n'
 
     def open(self, blend=None):
         if '.blend' not in blend:
@@ -895,7 +997,7 @@ class pyb(object):
         """
         self.render(**kwargs)
         if sys.platform == "darwin":
-            blender_path = '/Applications/Blender/blender.app/Contents/MacOS/blender' # '/Applications/blender.app/Contents/MacOS/blender'
+            blender_path = '/Applications/Blender.app/Contents/MacOS/Blender' # '/Applications/blender.app/Contents/MacOS/blender'
         else:
             blender_path = 'blender'
         with open(self.filename + '.py', 'w') as f:
