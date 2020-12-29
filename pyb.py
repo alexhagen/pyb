@@ -61,8 +61,8 @@ class pyb(object):
         self.file_string += 'scene = bpy.context.scene\n'
         self.file_string += '# First, delete the default cube\n'
         self.file_string += 'bpy.ops.object.delete()\n'
-        #self.file_string += 'fg = bpy.data.groups.new("freestyle_group")\n'
-        #self.file_string += 'tg = bpy.data.groups.new("transparent_group")\n'
+        self.file_string += 'fg = bpy.data.collections.new("freestyle_group")\n'
+        self.file_string += 'tg = bpy.data.collections.new("transparent_group")\n'
         #self.file_string += 'bpy.ops.scene.render_layer_add()\n'
 
     def sun(self, strength=1.0):
@@ -615,7 +615,7 @@ class pyb(object):
     def flat(self, name="Flat", color='#555555', alpha=1.0):
         self.file_string += '%s = bpy.data.materials.new("%s")\n' % (name, name)
         rgb = Color(color).rgb
-        self.file_string += '%s.diffuse_color = (%6.4f, %6.4f, %6.4f)\n' % (name, rgb[0], rgb[1], rgb[2])
+        self.file_string += '%s.diffuse_color = (%6.4f, %6.4f, %6.4f, %6.4f)\n' % (name, rgb[0], rgb[1], rgb[2], alpha)
         if alpha < 1.0:
             self.file_string += '%s.use_nodes = True\n' % name
             self.file_string += 'nodes = %s.node_tree.nodes\n' % name
@@ -666,8 +666,8 @@ class pyb(object):
 
     def line3d(self, xs, ys, zs, name='line', bevel=1.0, color=None, alpha=1.0,
                emis=False, layer='render', **kwargs):
-        self.file_string += "render_layers = bpy.context.scene.render.layers\n"
-        self.file_string += "print([rl.name for rl in render_layers])\n"
+        #self.file_string += "render_layers = bpy.context.scene.render.layers\n"
+        #self.file_string += "print([rl.name for rl in render_layers])\n"
         self.file_string += "verts = [\n"
         for i, (x, y, z) in enumerate(zip(xs, ys, zs)):
             self.file_string += \
@@ -684,9 +684,12 @@ class pyb(object):
         self.file_string += "{name}_object = bpy.data.objects.new(\"{name}\", {name}_mesh)\n".format(name=name)
         self.file_string += "{name}_object.data = {name}_mesh\n".format(name=name)
         self.file_string += "scene = bpy.context.scene\n".format(name=name)
-        self.file_string += "scene.objects.link({name}_object)\n".format(name=name)
-        self.file_string += "{name}_object.select = True\n".format(name=name)
-        self.file_string += "bpy.context.collection.objects.active = {name}_object\n".format(name=name)
+        #self.file_string += "scene.objects.link({name}_object)\n".format(name=name)
+        #self.file_string += "{name}_object.select = True\n".format(name=name)
+        #self.file_string += "bpy.context.collection.objects.active = {name}_object\n".format(name=name)
+        self.file_string += f"bpy.context.scene.collection.objects.link({name}_object)\n"
+        self.file_string += f"{name}_object.select_set(True)\n"
+        self.file_string += f"bpy.context.view_layer.objects.active = {name}_object\n"
         self.file_string += "bpy.ops.object.convert(target=\"CURVE\")\n".format(name=name)
         self.file_string += "{name}_object.data.fill_mode = \"FULL\"\n".format(name=name)
         self.file_string += "{name}_object.data.bevel_depth = {bevel}\n".format(name=name, bevel=bevel)
