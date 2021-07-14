@@ -2,7 +2,7 @@
 from setuptools import setup
 
 
-REQUIREMENTS = ['matplotlib', 'numpy']
+REQUIREMENTS = ['matplotlib', 'numpy', 'psgv']
 
 setup(name='pyb',
       version='1.0',

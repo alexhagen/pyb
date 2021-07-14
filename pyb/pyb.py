@@ -41,6 +41,7 @@ class pyb(object):
         self._draft = False
         self.path = os.getcwd()
         self.scene_setup()
+        self.particles = []
 
     def copy(self):
         return copy.deepcopy(self)
@@ -56,8 +57,11 @@ class pyb(object):
             :returns: None
         """
         self.file_string += 'import bpy\n'
+        self.file_string += 'import random\n'
+        self.file_string += 'import time\n'
         home = expanduser("~")
-        self.file_string += open(home + '/code/pyb/blender_mats_utils.py', 'r').read()
+        this_path = os.path.dirname(__file__)
+        self.file_string += open(os.path.join(this_path, 'blender_mats_utils.py'), 'r').read()
         self.file_string += 'scene = bpy.context.scene\n'
         self.file_string += '# First, delete the default cube\n'
         self.file_string += 'bpy.ops.object.delete()\n'
@@ -171,7 +175,7 @@ class pyb(object):
 
     def rpp(self, x1=None, x2=None, y1=None, y2=None, z1=None, z2=None, c=None,
             l=None, name="rpp", color=None, alpha=1.0, verts=None,
-                    emis=False, layer='render', **kwargs):
+                    emis=False, layer='render', r=None, **kwargs):
         self.name = name
         if (x1 is not None) and (x2 is not None) and (y1 is not None) and \
             (y2 is not None) and (z1 is not None) and (z2 is not None):
@@ -180,9 +184,13 @@ class pyb(object):
         if c is not None and l is not None:
             self.file_string += 'bpy.ops.mesh.primitive_cube_add()\n'
             self.file_string += 'bpy.context.object.name = "%s"\n' % (name)
+            
             self.file_string += 'bpy.context.object.location = (%15.10e, %15.10e, %15.10e)\n' % (c[0], c[1], c[2])
             self.file_string += 'bpy.context.object.scale = (%15.10e, %15.10e, %15.10e)\n' % (l[0]/2., l[1]/2., l[2]/2.)
             self.file_string += 'bpy.ops.object.transform_apply(location=True, scale=True)\n'
+            if r is not None:
+                self.file_string += 'bpy.context.object.rotation_euler = (%15.10e, %15.10e, %15.10e)\n' % (r[0], r[1], r[2])
+                self.file_string += 'bpy.ops.object.transform_apply(rotation=True)\n'
             self.file_string += '%s = bpy.context.object\n' % (name)
         elif verts is not None:
             self.file_string += 'mesh = bpy.data.meshes.new("%s")\n' % (name)
@@ -637,7 +645,10 @@ class pyb(object):
 
     def emis(self, name="Source", color="#555555", alpha=1.0, volume=False,
              emittance=1.0, **kwargs):
-        rgb = Color(color).rgb
+        if isinstance(color, str):
+            rgb = Color(color).rgb
+        else:
+            rgb = color
         self.file_string += 'source = bpy.data.materials.new("%s")\n' % name
         self.file_string += 'source.use_nodes = True\n'
         self.file_string += 'nodes = source.node_tree.nodes\n'
@@ -713,6 +724,61 @@ class pyb(object):
         elif color is not None and emis:
             self.emis(name="%s_color" % name, color=color, **kwargs)
             self.set_matl(obj=name, matl="%s_color" % name)
+
+    @staticmethod
+    def draw_random_triple(low=0.5, high=1.5, same=False):
+        x = random.uniform(low, high)
+        if same:
+            y = x
+            z = x
+        else:
+            y = random.uniform(low, high)
+            z = random.uniform(low, high)
+        return x, y, z
+
+    def random_particle(self, base='sph'):
+            id = random.randint(10_000, 90_000)
+            name = f'part_{id}'
+            self.particles.append(name)
+            self.file_string += 'ov=bpy.context.copy()' + "\n"
+            self.file_string += 'ov[\'area\']=[a for a in bpy.context.screen.areas if a.type=="VIEW_3D"][0]' + "\n"
+            if base == 'sph':
+                self.file_string += 'bpy.ops.mesh.primitive_ico_sphere_add()' + "\n"
+            elif base == 'cube':
+                self.file_string += 'bpy.ops.mesh.primitive_cube_add()' + "\n"
+            self.file_string += 'bpy.context.object.name = "%s"\n' % (name)
+            self.file_string += 'bpy.ops.object.mode_set(mode=\'EDIT\')' + "\n"
+            self.file_string += 'bpy.ops.mesh.faces_shade_smooth()' + "\n"
+            self.file_string += 'bpy.ops.mesh.select_mode(type=\'VERT\')' + "\n"
+            for i in range(3):
+                self.file_string += 'bpy.ops.mesh.select_all(action=\'DESELECT\')' + "\n"
+                self.file_string += 'bpy.ops.mesh.select_random(action=\'SELECT\')' + "\n"
+                x, y, z = self.draw_random_triple(0.1, 2.0, same=False)
+                self.file_string += f'bpy.ops.transform.resize(value=({x}, {y}, {z}))' + "\n"
+                self.file_string += 'bpy.ops.mesh.select_all(action=\'SELECT\')' + "\n"
+                self.file_string += 'bpy.ops.mesh.subdivide(smoothness=1.0)' + "\n"
+                
+            self.file_string += 'stretch = random.uniform(0.33,3.0)' + "\n"
+            self.file_string += 'bpy.ops.transform.resize(ov, value=(stretch,1,1))' + "\n"
+            
+            for axis in ['Z', 'X', 'Y']:
+                self.file_string += f'bpy.ops.transform.rotate(ov, value=(random.uniform(-1.57,1.57)), orient_axis=\'{axis}\')' + "\n"
+                self.file_string += 'bpy.ops.object.mode_set(mode=\'OBJECT\')' + "\n"
+            self.file_string += '%s = bpy.context.object\n' % name
+            #self.emis(name=f'{name}_color', color='#777777', emittance=0.1, alpha=0.7)
+            #self.set_matl(obj=name, matl=f'{name}_color')
+            
+    def set_random_colors(self):
+        for name in self.particles:
+            color = self.draw_random_triple(0.05, 0.5, same=False)
+            self.emis(f'{name}_color', color=color, emittance=10)
+            self.set_matl(obj=name, matl=f"{name}_color")
+
+    def random_particles(self, N=10, **kwargs):
+        for i in range(N):
+            x, y, z = self.draw_random_triple(-5.0, 5.0)
+            self.file_string += f'bpy.context.scene.cursor.location = ({x}, {y}, {0.1*z})' + "\n"
+            self.random_particle(**kwargs)
 
 
     def image(self, name="Image", fname=None, alpha=1.0, volume=False,
@@ -879,7 +945,9 @@ class pyb(object):
     def render(self, camera_location=(500, 500, 300), c=(0., 0., 0.),
                l=(250., 250., 250.), render=True, fit=True, samples=20,
                res=[1920, 1080], draft=False, freestyle=True,
-               perspective=True, pscale=350, bg_lum=1.0, **kwargs):
+               perspective=True, pscale=350, bg_lum=1.0, bg_color=(1.0, 1.0, 1.0),
+               transparent=True,
+               **kwargs):
         if self._draft or draft:
             res = [640, 480]
             samples = 10
@@ -917,10 +985,10 @@ class pyb(object):
         self.look_at(target="Empty")
         self.file_string += '# changing these values does affect the render.\n'
         self.file_string += 'bpy.data.worlds[\'World\'].use_nodes = True\n'
-        self.file_string += 'bpy.data.worlds[\'World\'].node_tree.nodes[\'Background\'].inputs[0].default_value[:3] = (1,1,1)\n'
+        self.file_string += f'bpy.data.worlds[\'World\'].node_tree.nodes[\'Background\'].inputs[0].default_value[:3] = ({bg_color[0]}, {bg_color[1]}, {bg_color[2]})\n'
         self.file_string += f'bpy.data.worlds[\'World\'].node_tree.nodes[\'Background\'].inputs[1].default_value = {bg_lum}\n'
         self.file_string += 'bg = world.node_tree.nodes["Background"]\n'
-        self.file_string += 'bg.inputs[0].default_value[:3] = (1.0, 1.0, 1.0)\n'
+        self.file_string += f'bg.inputs[0].default_value[:3] = ({bg_color[0]}, {bg_color[1]}, {bg_color[2]})\n'
         self.file_string += f'bg.inputs[1].default_value = {bg_lum}\n'
         self.file_string += 'bpy.data.scenes["Scene"].render.filepath = "%s" + ".png"\n' % self.filename
         self.file_string += 'bpy.context.scene.render.use_freestyle = %s\n' % freestyle
@@ -956,9 +1024,9 @@ class pyb(object):
         self.file_string += 'bpy.context.scene.cycles.volume_bounces = 4\n'
         self.file_string += 'bpy.context.scene.cycles.transparent_max_bounces = 32\n'
         self.file_string += 'bpy.context.scene.cycles.transparent_min_bounces = 8\n'
-        self.file_string += 'bpy.data.scenes["Scene"].cycles.film_transparent = True\n'
+        self.file_string += f'bpy.data.scenes["Scene"].cycles.film_transparent = {transparent}\n'
         self.file_string += 'bpy.context.scene.cycles.filter_glossy = 0.05\n'
-        self.file_string += 'bpy.data.scenes["Scene"].render.film_transparent = True\n'
+        self.file_string += f'bpy.data.scenes["Scene"].render.film_transparent = {transparent}\n'
         self.file_string += 'bpy.ops.wm.save_as_mainfile(filepath="%s.blend")\n' % self.filename
         if render:
             self.file_string += 'bpy.ops.render.render( write_still=True )\n'
