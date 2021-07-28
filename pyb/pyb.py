@@ -24,7 +24,56 @@ top_layer[0] = True
 n_layer = [False] * 20
 n_layer[1] = True
 
-class pyb(object):
+class FileStringStream:
+    def __init__(self):
+        self.file_string = ''
+
+    def copy(self):
+        return copy.deepcopy(self)
+
+    def add_line(self, string):
+        self.file_string += str(string) + "\n"
+        return self
+
+    def a(self, *args, **kwargs):
+        return self.add_line(*args, **kwargs)
+
+    def __str__(self):
+        return self.file_string
+
+
+class PrincipledBSDF(FileStringStream):
+    def __init__(self, name='pbsdf', color='#ffffff', specular=0.01,
+                 roughness=0.5):
+        super().__init__()
+        if isinstance(color, str):
+            rgb = Color(color).rgb
+        else:
+            rgb = color
+        self.a(f'source = bpy.data.materials.new("{name}")')
+        self.a(f'source.use_nodes = True')
+        self.a(f'nodes = source.node_tree.nodes')
+        self.a(f'for key in nodes.values():')
+        self.a(f'    nodes.remove(key)')
+        self.a(f'links = source.node_tree.links')
+        # Then, make the bsdf weight shader
+        self.a(f'{name}_bsdf = nodes.new(type="ShaderNodeBsdfPrincipled")')
+        # change the basecolor
+        self.a(f'{name}_bsdf.inputs[0].default_value = ({rgb[0]}, {rgb[1]}, {rgb[2]}, 1.0)')
+        # change the specular
+        self.a(f'{name}_bsdf.inputs[5].default_value = {specular}')
+        # change the roughness
+        self.a(f'{name}_bsdf.inputs[7].default_value = {roughness}')
+        self.a(f'{name}_material_output = nodes.new("ShaderNodeOutputMaterial")')
+        self.a(f'links.new({name}_bsdf.outputs[0], {name}_material_output.inputs[0])')
+        self.a(f'for node in nodes:')
+        self.a(f'    node.update()')
+        self.a(f'{name} = source')
+
+    def __str__(self):
+        return self.file_string
+
+class pyb(FileStringStream):
     """ An object to save commands for blender 3d plotting and render
 
         The ``pyb`` class is your blender scene, and I've coded in a limited
@@ -32,19 +81,17 @@ class pyb(object):
         automatically saves to "brender_01.blend/.png" in the current
         directory, if you can't find the files.
     """
-    def __init__(self):
-        self.file_string = ''
+    def __init__(self, default_light=True):
+        super().__init__()
         #self.file = tempfile.NamedTemporaryFile(suffix=".py", prefix="brender_")
         self.filename = "brender_01"
         self.has_run = False
         self.proj_matrix = None
         self._draft = False
         self.path = os.getcwd()
+        self.default_light = default_light
         self.scene_setup()
         self.particles = []
-
-    def copy(self):
-        return copy.deepcopy(self)
 
     def scene_setup(self):
         """ deletes the default cube and sets up a scene to be used to render
@@ -56,15 +103,20 @@ class pyb(object):
 
             :returns: None
         """
-        self.file_string += 'import bpy\n'
-        self.file_string += 'import random\n'
-        self.file_string += 'import time\n'
+        self.a('import bpy')
+        self.a('import random')
+        self.a('import time')
         home = expanduser("~")
         this_path = os.path.dirname(__file__)
         self.file_string += open(os.path.join(this_path, 'blender_mats_utils.py'), 'r').read()
         self.file_string += 'scene = bpy.context.scene\n'
         self.file_string += '# First, delete the default cube\n'
         self.file_string += 'bpy.ops.object.delete()\n'
+        # then delete the light if true
+        if self.default_light:
+            self.file_string += 'bpy.data.objects["Light"].select_set(True)' + "\n"
+            self.file_string += 'bpy.context.view_layer.objects.active = bpy.data.objects["Light"]' + "\n"
+            self.file_string += 'bpy.ops.object.delete()' + "\n"
         self.file_string += 'fg = bpy.data.collections.new("freestyle_group")\n'
         self.file_string += 'tg = bpy.data.collections.new("transparent_group")\n'
         #self.file_string += 'bpy.ops.scene.render_layer_add()\n'
@@ -175,7 +227,7 @@ class pyb(object):
 
     def rpp(self, x1=None, x2=None, y1=None, y2=None, z1=None, z2=None, c=None,
             l=None, name="rpp", color=None, alpha=1.0, verts=None,
-                    emis=False, layer='render', r=None, **kwargs):
+            emis=False, layer='render', r=None, matl=None, **kwargs):
         self.name = name
         if (x1 is not None) and (x2 is not None) and (y1 is not None) and \
             (y2 is not None) and (z1 is not None) and (z2 is not None):
@@ -206,12 +258,16 @@ class pyb(object):
         elif layer == 'trans':
             self.file_string += 'tg.objects.link({name})\n'.format(name=name)
         self.file_string += "{name} = bpy.context.object\n".format(name=name)
-        if color is not None and not emis:
-            self.flat(name="%s_color" % name, color=color, alpha=alpha)
-            self.set_matl(obj=name, matl="%s_color" % name)
-        elif color is not None and emis:
-            self.emis(name="%s_color" % name, alpha=alpha, color=color, **kwargs)
-            self.set_matl(obj=name, matl="%s_color" % name)
+        if matl is not None:
+            if color is not None and not emis:
+                self.flat(name="%s_color" % name, color=color, alpha=alpha)
+                self.set_matl(obj=name, matl="%s_color" % name)
+            elif color is not None and emis:
+                self.emis(name="%s_color" % name, alpha=alpha, color=color, **kwargs)
+                self.set_matl(obj=name, matl="%s_color" % name)
+            self.a(matl)
+            self.set_matl(obj=name, matl=f'{name}_color')
+        
 
     def plane(self, x1=None, x2=None, y1=None, y2=None, z1=None, z2=None,
               c=None, l=None, name="plane", color=None, alpha=1.0, verts=None,
@@ -675,6 +731,46 @@ class pyb(object):
         self.file_string += 'trans.diffuse_color = (%6.4f, %6.4f, %6.4f)\n' % (rgb[0], rgb[1], rgb[2])
         self.file_string += '%s = trans\n' % name
 
+    def sem(self, name="Sem", e_color="#EEEEEE", bsdf_color='#000000',
+                lw_value=0.3, **kwargs):
+        if isinstance(e_color, str):
+            e_rgb = Color(e_color).rgb
+        else:
+            e_rgb = e_color
+        if isinstance(bsdf_color, str):
+            bsdf_rgb = Color(bsdf_color).rgb
+        else:
+            bsdf_rgb = bsdf_color
+        self.a(f'source = bpy.data.materials.new("{name}")')
+        self.a(f'source.use_nodes = True')
+        self.a(f'nodes = source.node_tree.nodes')
+        self.a(f'for key in nodes.values():')
+        self.a(f'    nodes.remove(key)')
+        self.a(f'links = source.node_tree.links')
+        # First, make the layer weight shader
+        self.a(f'{name}_lw = nodes.new(type="ShaderNodeLayerWeight")')
+        # change the blend value
+        self.a(f'{name}_lw.inputs[0].default_value = {lw_value}')
+        # Then, make the bsdf weight shader
+        self.a(f'{name}_bsdf = nodes.new(type="ShaderNodeBsdfPrincipled")')
+        # change the basecolor
+        self.a(f'{name}_bsdf.inputs[0].default_value = ({bsdf_rgb[0]}, {bsdf_rgb[1]}, {bsdf_rgb[2]}, 1.0)')
+        # change the roughness
+        self.a(f'{name}_bsdf.inputs[7].default_value = 1.0')
+        # Third make the emission shader
+        self.a(f'{name}_e = nodes.new(type="ShaderNodeEmission")')
+        self.a(f'{name}_e.inputs[0].default_value = ({e_rgb[0]}, {e_rgb[1]}, {e_rgb[2]}, 1.0)')
+        self.a(f'{name}_e.inputs[1].default_value = 100.0')
+        self.a(f'{name}_mix = nodes.new("ShaderNodeMixShader")')
+        self.a(f'links.new({name}_lw.outputs[0], {name}_mix.inputs[0])')
+        self.a(f'links.new({name}_bsdf.outputs[0], {name}_mix.inputs[1])')
+        self.a(f'links.new({name}_e.outputs[0], {name}_mix.inputs[2])')
+        self.a(f'{name}_material_output = nodes.new("ShaderNodeOutputMaterial")')
+        self.a(f'links.new({name}_mix.outputs[0], {name}_material_output.inputs[0])')
+        self.a(f'for node in nodes:')
+        self.a(f'    node.update()')
+        self.a(f'{name} = source')
+
     def line3d(self, xs, ys, zs, name='line', bevel=1.0, color=None, alpha=1.0,
                emis=False, layer='render', **kwargs):
         #self.file_string += "render_layers = bpy.context.scene.render.layers\n"
@@ -736,8 +832,10 @@ class pyb(object):
             z = random.uniform(low, high)
         return x, y, z
 
-    def random_particle(self, base='sph'):
-            id = random.randint(10_000, 90_000)
+    def random_particle(self, base='sph', seed=1):
+            random.seed(seed)
+            self.file_string += f'random.seed({seed})' + "\n"
+            id = seed#random.randint(10_000, 90_000)
             name = f'part_{id}'
             self.particles.append(name)
             self.file_string += 'ov=bpy.context.copy()' + "\n"
@@ -753,7 +851,7 @@ class pyb(object):
             for i in range(3):
                 self.file_string += 'bpy.ops.mesh.select_all(action=\'DESELECT\')' + "\n"
                 self.file_string += 'bpy.ops.mesh.select_random(action=\'SELECT\')' + "\n"
-                x, y, z = self.draw_random_triple(0.1, 2.0, same=False)
+                x, y, z = self.draw_random_triple(0.8, 1.2, same=False)
                 self.file_string += f'bpy.ops.transform.resize(value=({x}, {y}, {z}))' + "\n"
                 self.file_string += 'bpy.ops.mesh.select_all(action=\'SELECT\')' + "\n"
                 self.file_string += 'bpy.ops.mesh.subdivide(smoothness=1.0)' + "\n"
@@ -765,8 +863,8 @@ class pyb(object):
                 self.file_string += f'bpy.ops.transform.rotate(ov, value=(random.uniform(-1.57,1.57)), orient_axis=\'{axis}\')' + "\n"
                 self.file_string += 'bpy.ops.object.mode_set(mode=\'OBJECT\')' + "\n"
             self.file_string += '%s = bpy.context.object\n' % name
-            #self.emis(name=f'{name}_color', color='#777777', emittance=0.1, alpha=0.7)
-            #self.set_matl(obj=name, matl=f'{name}_color')
+            self.sem(name=f'{name}_sem')
+            self.set_matl(obj=name, matl=f'{name}_sem')
             
     def set_random_colors(self):
         for name in self.particles:
@@ -774,11 +872,26 @@ class pyb(object):
             self.emis(f'{name}_color', color=color, emittance=10)
             self.set_matl(obj=name, matl=f"{name}_color")
 
-    def random_particles(self, N=10, **kwargs):
+    def set_new_sem_colors(self, seed=1):
+        np.random.seed(seed)
+        e_color = self.draw_random_triple(0.9, 1.0, same=False)
+        bsdf_color = self.draw_random_triple(0.0, 0.1, same=False)
+        lw_value = np.random.uniform(0.0, 0.5)
+        for name in self.particles:
+            self.sem(f'{name}_color', e_color=e_color, bsdf_color=bsdf_color,
+                     lw_value=lw_value)
+            self.set_matl(obj=name, matl=f'{name}_color')
+        return e_color, bsdf_color, lw_value
+
+    def random_particles(self, N=10, seed_start=0, **kwargs):
         for i in range(N):
             x, y, z = self.draw_random_triple(-5.0, 5.0)
             self.file_string += f'bpy.context.scene.cursor.location = ({x}, {y}, {0.1*z})' + "\n"
-            self.random_particle(**kwargs)
+            self.random_particle(seed=seed_start+i, **kwargs)
+        color = self.draw_random_triple(0.0, 0.45, same=True)
+        rough_background = PrincipledBSDF(name='rpp_color', color=color, specular=0.005)
+        self.rpp(x1=-10.0, x2=10.0, y1=-10.0, y2=10.0, z1=-0.51, z2=-0.50,
+                 matl=rough_background)
 
 
     def image(self, name="Image", fname=None, alpha=1.0, volume=False,
