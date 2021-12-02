@@ -121,6 +121,11 @@ class pyb(FileStringStream):
         self.file_string += 'tg = bpy.data.collections.new("transparent_group")\n'
         #self.file_string += 'bpy.ops.scene.render_layer_add()\n'
 
+    def delete(self, name):
+        self.file_string += f'bpy.data.objects["{name}"].select_set(True)' + "\n"
+        self.file_string += f'bpy.context.view_layer.objects.active = bpy.data.objects["{name}"]' + "\n"
+        self.file_string += 'bpy.ops.object.delete()' + "\n"
+
     def sun(self, strength=1.0):
         """ creates a blender sun lamp
 
@@ -361,7 +366,10 @@ class pyb(FileStringStream):
         elif layer == 'trans':
             self.file_string += 'tg.objects.link({name})\n'.format(name=name)
         self.file_string += "{name} = bpy.context.object\n".format(name=name)
-        if color is not None and not emis:
+        if color == 'sem':
+            self.sem(name=f'{name}_sem')
+            self.set_matl(obj=name, matl=f'{name}_sem')
+        elif isinstance(color, str) is not None and not emis:
             self.flat(name="%s_color" % name, color=color, alpha=alpha)
             self.set_matl(obj=name, matl="%s_color" % name)
         elif color is not None and emis:
@@ -862,6 +870,28 @@ class pyb(FileStringStream):
             for axis in ['Z', 'X', 'Y']:
                 self.file_string += f'bpy.ops.transform.rotate(ov, value=(random.uniform(-1.57,1.57)), orient_axis=\'{axis}\')' + "\n"
                 self.file_string += 'bpy.ops.object.mode_set(mode=\'OBJECT\')' + "\n"
+            self.file_string += '%s = bpy.context.object\n' % name
+            self.sem(name=f'{name}_sem')
+            self.set_matl(obj=name, matl=f'{name}_sem')
+
+    def sem_sphere(self, c, r, base='sph', seed=1):
+            random.seed(seed)
+            id = seed
+            name = f'part_{id}'
+            self.file_string += 'ov=bpy.context.copy()' + "\n"
+            self.file_string += 'ov[\'area\']=[a for a in bpy.context.screen.areas if a.type=="VIEW_3D"][0]' + "\n"
+            self.file_string += 'bpy.ops.mesh.primitive_ico_sphere_add()' + "\n"
+            self.file_string += 'bpy.context.object.name = "%s"\n' % (name)
+            self.file_string += 'bpy.ops.object.mode_set(mode=\'EDIT\')' + "\n"
+            self.file_string += 'bpy.ops.mesh.faces_shade_smooth()' + "\n"
+            self.file_string += 'bpy.ops.mesh.select_mode(type=\'VERT\')' + "\n"
+            self.file_string += 'bpy.ops.mesh.select_all(action=\'DESELECT\')' + "\n"
+            self.file_string += 'bpy.ops.mesh.select_random(action=\'SELECT\')' + "\n"
+            x, y, z = self.draw_random_triple(0.8, 1.2, same=False)
+            self.file_string += f'bpy.ops.transform.resize(value=({x}, {y}, {z}))' + "\n"
+            self.file_string += 'bpy.ops.mesh.select_all(action=\'SELECT\')' + "\n"
+            self.file_string += 'bpy.ops.mesh.subdivide(smoothness=1.0)' + "\n"
+                
             self.file_string += '%s = bpy.context.object\n' % name
             self.sem(name=f'{name}_sem')
             self.set_matl(obj=name, matl=f'{name}_sem')
