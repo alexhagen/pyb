@@ -1,0 +1,82 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bpwf"
+version = "3.0.0"
+description = "Blender for Publication-Worthy Figures - Programmatic 3D rendering with Blender's bpy"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+    {name = "Alex Hagen", email = "alexhagen6@gmail.com"}
+]
+keywords = ["blender", "bpy", "3d", "rendering", "visualization", "procedural", "publication", "figures"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Graphics :: 3D Rendering",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+
+dependencies = [
+    "bpy>=4.0.0",
+    "matplotlib>=3.5.0",
+    "numpy>=1.21.0",
+    "colour>=0.1.5",
+    "fastmcp>=0.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+]
+volume = [
+    "pyopenvdb>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://alexhagen.github.io/bpwf"
+Documentation = "https://alexhagen.github.io/bpwf"
+Repository = "https://github.com/alexhagen/pyb"
+Issues = "https://github.com/alexhagen/pyb/issues"
+
+[project.scripts]
+bpwf-mcp = "bpwf.mcp_server:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["bpwf*"]
+exclude = ["tests*", "docs*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --cov=bpwf --cov-report=html --cov-report=term"

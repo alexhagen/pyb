@@ -1,5 +1,12 @@
 # bpwf - Blender for Publication-Worthy Figures
 
+[![PyPI version](https://badge.fury.io/py/bpwf.svg)](https://badge.fury.io/py/bpwf)
+[![Python Versions](https://img.shields.io/pypi/pyversions/bpwf.svg)](https://pypi.org/project/bpwf/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Tests](https://github.com/alexhagen/pyb/actions/workflows/test.yml/badge.svg)](https://github.com/alexhagen/pyb/actions/workflows/test.yml)
+[![Coverage](https://img.shields.io/badge/coverage-11%25-red.svg)](htmlcov/index.html)
+[![Downloads](https://pepy.tech/badge/bpwf/month)](https://pepy.tech/project/bpwf)
+
 A Python package for programmatic 3D scene creation and rendering using Blender's `bpy` module. Write Python code to generate complex 3D visualizations without manually operating Blender's GUI.
 
 ## Overview
