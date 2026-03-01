@@ -86,6 +86,8 @@ scene.render(
 scene.show()
 ```
 
+![Quick Start Example](assets/01_quick_start.png)
+
 ## Basic Examples
 
 ### Creating Primitives
@@ -106,6 +108,8 @@ scene.cone(c=[0, 0, 0], r1=1.0, r2=0.0, h=2.0,
            name="cone", color="#2ECC71")
 ```
 
+![Creating Primitives Example](assets/02_creating_primitives.png)
+
 ### Boolean Operations
 
 ```python
@@ -118,6 +122,8 @@ scene.sph(c=[0.5, 0, 0], r=1.0, name="sphere2", color="#E74C3C")
 # Subtract sphere2 from sphere1
 scene.subtract("sphere1", "sphere2")
 ```
+
+![Boolean Operations Example](assets/03_boolean_operations.png)
 
 ### Materials and Lighting
 
@@ -135,6 +141,8 @@ scene.sph(c=[2, 0, 0], r=1.0, name="glass_sphere",
 # Add sun lamp
 scene.sun(strength=1.0)
 ```
+
+![Materials and Lighting Example](assets/04_materials_lighting.png)
 
 ### Using Principled BSDF Materials
 
@@ -156,6 +164,8 @@ scene.sph(c=[0, 0, 0], r=1.0, name="metal_sphere")
 scene.set_matl(obj="metal_sphere", matl="metal")
 ```
 
+![Principled BSDF Materials Example](assets/05_principled_bsdf.png)
+
 ## Multi-Scene Support
 
 Create and manage multiple independent scenes:
@@ -175,6 +185,14 @@ scene2.rpp(c=[0, 0, 0], l=[2, 2, 2], name="box1", color="#0000FF")
 scene1.render(camera_location=[4, -4, 3])
 scene2.render(camera_location=[4, -4, 3])
 ```
+
+**Scene 1 (Red Sphere):**
+
+![Multi-Scene Example 1](assets/06_multi_scene_1.png)
+
+**Scene 2 (Blue Box):**
+
+![Multi-Scene Example 2](assets/06_multi_scene_2.png)
 
 ## MCP Server
 

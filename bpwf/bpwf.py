@@ -64,8 +64,8 @@ class PrincipledBSDF:
         # Create Principled BSDF
         bsdf = nodes.new(type="ShaderNodeBsdfPrincipled")
         bsdf.inputs[0].default_value = (rgb[0], rgb[1], rgb[2], 1.0)  # Base Color
-        bsdf.inputs[5].default_value = specular  # Specular
-        bsdf.inputs[7].default_value = roughness  # Roughness
+        bsdf.inputs['Specular IOR Level'].default_value = specular  # Specular
+        bsdf.inputs['Roughness'].default_value = roughness  # Roughness
         
         # Create Material Output
         material_output = nodes.new("ShaderNodeOutputMaterial")
@@ -110,13 +110,17 @@ class bpwf:
         """Set up the scene by removing default objects."""
         # Delete default cube if it exists
         if "Cube" in bpy.data.objects:
-            bpy.data.objects["Cube"].select_set(True)
-            bpy.ops.object.delete()
+            cube = bpy.data.objects["Cube"]
+            # Check if cube is in the current scene
+            if cube.name in self.scene.objects:
+                bpy.data.objects.remove(cube, do_unlink=True)
         
         # Delete default light if requested
         if self.default_light and "Light" in bpy.data.objects:
-            bpy.data.objects["Light"].select_set(True)
-            bpy.ops.object.delete()
+            light = bpy.data.objects["Light"]
+            # Check if light is in the current scene
+            if light.name in self.scene.objects:
+                bpy.data.objects.remove(light, do_unlink=True)
         
         # Create collections for organization
         if "freestyle_group" not in bpy.data.collections:
@@ -469,7 +473,7 @@ class bpwf:
         modifier = left_obj.modifiers.new(type="BOOLEAN", name=f"{left}_{operation.lower()}_{right}")
         modifier.operation = operation
         modifier.object = right_obj
-        modifier.solver = 'FAST'
+        modifier.solver = 'EXACT'
         
         # Apply modifier
         bpy.context.view_layer.objects.active = left_obj
@@ -716,14 +720,20 @@ class bpwf:
         self.scene.render.resolution_x = res[0]
         self.scene.render.resolution_y = res[1]
         
-        # Set up camera
-        if "Camera" not in bpy.data.objects:
-            camera_data = bpy.data.cameras.new("Camera")
-            camera = bpy.data.objects.new("Camera", camera_data)
+        # Set up camera - create unique camera for each scene
+        camera_name = f"Camera_{self.scene.name}" if self.scene.name != "Scene" else "Camera"
+        
+        if camera_name not in bpy.data.objects:
+            camera_data = bpy.data.cameras.new(camera_name)
+            camera = bpy.data.objects.new(camera_name, camera_data)
             self.scene.collection.objects.link(camera)
             self.scene.camera = camera
         else:
-            camera = bpy.data.objects["Camera"]
+            camera = bpy.data.objects[camera_name]
+            # Make sure camera is in this scene
+            if camera.name not in self.scene.objects:
+                self.scene.collection.objects.link(camera)
+            self.scene.camera = camera
         
         camera.location = camera_location
         camera.data.clip_end = 10000.0
@@ -757,8 +767,10 @@ class bpwf:
         blend_path = os.path.join(self.path, f"{self.filename}.blend")
         bpy.ops.wm.save_as_mainfile(filepath=blend_path)
         
-        # Render
+        # Render - switch to the correct scene context
         if render:
+            # Make sure we're rendering the correct scene
+            bpy.context.window.scene = self.scene
             bpy.ops.render.render(write_still=True)
             self.has_run = True
     
